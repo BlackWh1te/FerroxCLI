@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+ferrox/__init__.py
+ferrox/api.py
+ferrox/cli.py
+ferrox/config.py
+ferrox/ui.py
+ferrox.egg-info/PKG-INFO
+ferrox.egg-info/SOURCES.txt
+ferrox.egg-info/dependency_links.txt
+ferrox.egg-info/entry_points.txt
+ferrox.egg-info/requires.txt
+ferrox.egg-info/top_level.txt

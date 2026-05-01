@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ferrox-cli"
+version = "1.0.0"
+authors = [
+    { name = "Shukhrat", email = "shukhrat@example.com" },
+]
+description = "A Devin-style AI CLI with local file access, fallback engines, and permission controls."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "rich>=12.0.0",
+    "click>=8.0.0",
+    "prompt_toolkit>=3.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-ai>=0.0.13",
+    "instructor>=0.3.7",
+    "langgraph>=0.2.0",
+    "mirascope>=1.0.0",
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "httpx>=0.24.0",
+    "tiktoken>=0.7.0",
+    "watchdog>=4.0.0",
+    "diff-match-patch>=20230430",
+]
+
+[project.scripts]
+ferrox = "ferrox.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ferrox*"]

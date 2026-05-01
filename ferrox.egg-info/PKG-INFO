@@ -1,0 +1,177 @@
+Metadata-Version: 2.4
+Name: ferrox
+Version: 0.1.0
+Summary: Cross-platform AI CLI Tool for interacting with LLM providers
+Author-email: Ferrox Team <ferrox@example.com>
+License: MIT
+Project-URL: Homepage, https://github.com/ferrox/ferrox
+Project-URL: Repository, https://github.com/ferrox/ferrox
+Keywords: cli,ai,llm,openai,anthropic,ollama
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.0.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: prompt_toolkit>=3.0.0
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: httpx>=0.24.0
+
+# Ferrox CLI
+
+Cross-platform AI CLI Tool for interacting with any OpenAI-compatible LLM provider.
+
+## Philosophy
+
+**"Config-first, Model-second."** Configure your provider before accessing models. Ferrox feels like a native terminal extension with powerful interactive editing capabilities.
+
+## Features
+
+- **Provider-Agnostic**: Works with any OpenAI-compatible API (OpenAI, Anthropic, Ollama, LM Studio, vLLM, Together.ai, etc.)
+- **Beautiful UI**: Rich terminal output with markdown rendering and syntax highlighting
+- **Interactive Editing**: Edit messages in your preferred editor
+- **Model Management**: List and select from available models with caching
+- **Cross-Platform**: Works on Windows, macOS, and Linux
+- **File Access Control**: Explicit permission prompts for file operations
+
+## Installation
+
+### Windows (PowerShell)
+
+```powershell
+.\setup.ps1
+```
+
+### macOS / Linux
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+## Quick Start
+
+1. **Configure your provider:**
+   ```bash
+   ferrox config
+   ```
+
+2. **Select a model:**
+   ```bash
+   ferrox models
+   ```
+
+3. **Start chatting:**
+   ```bash
+   ferrox
+   ```
+
+## Configuration
+
+Edit `~/.ferrox/config.json`:
+
+```json
+{
+  "provider_name": "custom",
+  "base_url": "https://api.openai.com/v1",
+  "api_key": "sk-your-api-key",
+  "default_model": "gpt-4",
+  "timeout": 30,
+  "max_tokens": 4096,
+  "temperature": 0.7
+}
+```
+
+### Provider Examples
+
+#### OpenAI
+```json
+{
+  "provider_name": "openai",
+  "base_url": "https://api.openai.com/v1",
+  "api_key": "sk-..."
+}
+```
+
+#### Ollama (Local)
+```json
+{
+  "provider_name": "ollama",
+  "base_url": "http://localhost:11434/v1",
+  "api_key": "ollama"
+}
+```
+
+#### LM Studio
+```json
+{
+  "provider_name": "lmstudio",
+  "base_url": "http://localhost:1234/v1",
+  "api_key": "lm-studio"
+}
+```
+
+#### vLLM
+```json
+{
+  "provider_name": "vllm",
+  "base_url": "http://your-vllm-server:8000/v1",
+  "api_key": "your-api-key"
+}
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `ferrox` | Start interactive chat session |
+| `ferrox config` | Open config file in editor |
+| `ferrox models` | List available models |
+| `/cfg` | Open config (in chat) |
+| `/model` | Select model (in chat) |
+| `/clear` | Clear chat history |
+| `/help` | Show help |
+| `/exit` | Exit CLI |
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `EDITOR` | Your preferred text editor |
+| `FERROX_API_KEY` | Override API key from config |
+
+## Security Notes
+
+- Never commit API keys to Git
+- Consider using environment variables for sensitive data
+- Review file access permissions before allowing
+
+## Development
+
+```bash
+# Install in development mode
+pip install -e .
+
+# Run directly
+python -m ferrox.cli
+```
+
+## Requirements
+
+- Python 3.8+
+- click
+- rich
+- prompt_toolkit
+- pydantic
+- httpx
+
+## License
+
+MIT
