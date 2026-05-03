@@ -42,6 +42,8 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "readability-lxml>=0.8.1",
     # NEW: AI Enhancements
+    "praw>=7.7.0",
+    "playwright>=1.40.0",
     "sentence-transformers>=2.2.0",
     "faiss-cpu>=1.7.4",
     "openai>=1.0.0",

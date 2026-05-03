@@ -1017,6 +1017,218 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 result = await delete_tweet_tool(MockCtx(), tweet_id)
                 console.print(result)
                 continue
+            # === Reddit Bot Social Commands ===
+            elif command == "/reddit-mode":
+                """Toggle Reddit Bot Expert mode with skill injection."""
+                session_state["agent_role"] = "reddit_bot_expert"
+                ferrox_agent.agent_role = "reddit_bot_expert"
+                ferrox_agent.skill_manager.activate_skill("reddit_bot")
+                console.print("[cyan]Switched to Reddit Bot Expert mode.[/cyan]")
+                console.print("[dim]Reddit SKILL loaded. All restrictions active.[/dim]")
+                continue
+            elif command == "/reddit":
+                """Show Reddit bot status."""
+                from .reddit_config import load_reddit_state
+                from .reddit_daemon import get_daemon_status
+
+                status = get_daemon_status()
+                state = load_reddit_state()
+
+                from .reddit_browser_login import has_saved_reddit_session
+
+                browser_session = has_saved_reddit_session()
+
+                console.print("\n[bold cyan]Reddit Bot Status[/bold cyan]")
+                console.print("───────────────────────────────────────────────")
+                console.print(f"Daemon Running: {'Yes' if status['running'] else 'No'}")
+                console.print(f"Session Valid: {'Yes' if status['session_valid'] else 'No'}")
+                console.print(
+                    f"Browser Session: {'Saved (use /reddit login-browser to refresh)' if browser_session else 'None (run /reddit login or /reddit login-browser)'}")
+                console.print(f"Posts Today: {status['posts_today']}")
+                console.print(f"Comments Today: {status['comments_today']}")
+                console.print(f"Consecutive Failures: {status['consecutive_failures']}")
+                if status["started_at"]:
+                    console.print(f"Started: {status['started_at']}")
+                console.print("───────────────────────────────────────────────")
+                console.print("\n[dim]Commands:[/dim]")
+                console.print("  /reddit login         - OAuth login (client_id/client_secret)")
+                console.print("  /reddit login-browser - Browser cookie login (no password stored)")
+                console.print("  /reddit start         - Start background daemon")
+                console.print("  /reddit stop          - Stop daemon")
+                console.print("  /reddit panic         - Emergency stop & logout")
+                console.print("  /reddit undo          - Delete last submission")
+                console.print("───────────────────────────────────────────────\n")
+                continue
+            elif command == "/reddit login":
+                """Manual OAuth login to Reddit."""
+                console.print("[cyan]Reddit Bot Login (OAuth)[/cyan]")
+                console.print(
+                    "[yellow]Note: Credentials are stored in config. "
+                    "Consider '/reddit login-browser' for password-free browser login.[/yellow]"
+                )
+                username = console.input("Username: ")
+                password = console.input("Password: ", password=True)
+                client_id = console.input("Reddit API client_id: ")
+                client_secret = console.input("Reddit API client_secret: ")
+
+                from .reddit_config import RedditConfig
+
+                reddit_cfg = RedditConfig()
+                reddit_cfg.credentials.username = username
+                reddit_cfg.credentials.password = password
+                reddit_cfg.credentials.client_id = client_id
+                reddit_cfg.credentials.client_secret = client_secret
+
+                # Attach to main config
+                if hasattr(config, "reddit"):
+                    config.reddit = reddit_cfg
+                save_config(config)
+
+                console.print(
+                    "[green]Credentials saved. Run /reddit start to begin.[/green]"
+                )
+                continue
+            elif command == "/reddit login-browser":
+                """Real-browser Reddit login via local server — no automation, no password stored."""
+                from .reddit_browser_login import has_saved_reddit_session
+                from .reddit_local_server_login import reddit_login_via_local_server
+
+                if has_saved_reddit_session():
+                    overwrite = console.input(
+                        "A saved Reddit session already exists. Overwrite? [y/N]: "
+                    )
+                    if overwrite.lower().strip() not in ("y", "yes"):
+                        console.print("[dim]Kept existing session. Run /reddit start to use it.[/dim]")
+                        continue
+
+                console.print("[cyan]Reddit Login via Real Browser[/cyan]")
+                console.print(
+                    "[dim]A local server will start. Open the URL in your REAL browser,\n"
+                    "log in to Reddit, then paste the cookies back into the form.[/dim]"
+                )
+
+                result = await reddit_login_via_local_server(timeout_seconds=300)
+                console.print(result)
+                continue
+            elif command == "/reddit start":
+                """Validate Reddit session, show account info, start daemon, switch to SOCIAL mode."""
+                import threading
+
+                from .agent.tools_reddit import validate_reddit_session
+                from .reddit_daemon import start_daemon
+
+                # -- Step 1: Validate session --
+                console.print("[cyan]Validating Reddit session...[/cyan]")
+                user_info = validate_reddit_session()
+
+                if not user_info:
+                    console.print(
+                        "[red]Reddit session invalid or expired.[/red]\n"
+                        "[dim]Please log in again:[/dim]\n"
+                        "  /reddit login-browser  — browser login (recommended)\n"
+                        "  /reddit login            — manual OAuth credentials"
+                    )
+                    continue
+
+                # -- Step 2: Display account info --
+                is_placeholder = user_info["name"].startswith("(")
+                if is_placeholder:
+                    console.print("\n[bold cyan]Reddit Session Cookies Valid[/bold cyan]")
+                    console.print("───────────────────────────────────────────────")
+                    console.print("  [dim]Cookies loaded -- PRAW / browser mode active.[/dim]")
+                else:
+                    console.print("\n[bold cyan]Reddit Account Connected[/bold cyan]")
+                    console.print("───────────────────────────────────────────────")
+                    console.print(f"  Name:     [bold]/u/{user_info['name']}[/bold]")
+                    console.print(f"  Link Karma:     {user_info['link_karma']:,}")
+                    console.print(f"  Comment Karma:  {user_info['comment_karma']:,}")
+                    if user_info.get("is_mod"):
+                        console.print("  [yellow]Mod Status[/yellow]")
+                console.print("───────────────────────────────────────────────\n")
+
+                # -- Step 3: Switch to SOCIAL mode --
+                mode_manager.set_mode("SOCIAL")
+                console.print(
+                    "[bold bright_blue]SOCIAL MODE ACTIVE[/bold bright_blue]  "
+                    f"[{mode_manager.get_mode_description()}]"
+                )
+                console.print(
+                    "[dim]The agent now knows about your Reddit account and tools.\n"
+                    "Just ask naturally: 'post to r/technology about AI', 'check my karma',\n"
+                    "'reply to this post', 'what's trending on reddit', etc.[/dim]\n"
+                )
+
+                # -- Step 4: Start background daemon --
+                def run_reddit_daemon():
+                    start_daemon()
+
+                daemon_thread = threading.Thread(target=run_reddit_daemon, daemon=True)
+                daemon_thread.start()
+
+                console.print("[green]Reddit Bot daemon started in background.[/green]")
+                console.print("[dim]Use /reddit to check status, /reddit stop to stop.[/dim]")
+                continue
+            elif command == "/reddit stop":
+                """Stop Reddit bot daemon and return to NORMAL mode."""
+                from .reddit_daemon import stop_daemon
+
+                if stop_daemon():
+                    console.print("[green]Reddit Bot daemon stopped.[/green]")
+                else:
+                    console.print("[yellow]Daemon was not running.[/yellow]")
+
+                # Exit SOCIAL mode back to NORMAL
+                if mode_manager.current_mode.name == "SOCIAL":
+                    mode_manager.set_mode("NORMAL")
+                    console.print("[dim]Returned to NORMAL mode.[/dim]")
+                continue
+            elif command == "/reddit panic":
+                """Emergency stop and logout."""
+                from .reddit_config import load_reddit_state, save_reddit_state
+                from .reddit_daemon import stop_daemon
+
+                console.print("[red]PANIC MODE - Stopping everything![/red]")
+
+                stop_daemon()
+
+                state = load_reddit_state()
+                state.daemon_running = False
+                state.session_valid = False
+                state.consecutive_failures = 0
+                save_reddit_state(state)
+
+                # Also clear browser-login cookies
+                from .reddit_browser_login import clear_reddit_session
+
+                clear_reddit_session()
+
+                # Exit SOCIAL mode
+                if mode_manager.current_mode.name == "SOCIAL":
+                    mode_manager.set_mode("NORMAL")
+
+                console.print("[red]Panic complete. Bot stopped, all sessions cleared.[/red]")
+                continue
+            elif command == "/reddit undo":
+                """Delete last submission."""
+                from .agent.tools_reddit import delete_submission_tool
+                from .reddit_config import load_reddit_state
+
+                state = load_reddit_state()
+                if not state.recent_submissions:
+                    console.print("[yellow]No recent submissions to delete.[/yellow]")
+                    continue
+
+                last_post = state.recent_submissions[-1]
+                post_id = last_post.get("id")
+
+                console.print(f"[cyan]Deleting submission {post_id}...[/cyan]")
+
+                class MockCtx:
+                    pass
+
+                result = await delete_submission_tool(MockCtx(), post_id)
+                console.print(result)
+                continue
             else:
                 console.print(f"[red]Unknown command: {command}[/red]")
                 continue

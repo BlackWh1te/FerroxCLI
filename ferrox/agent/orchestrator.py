@@ -96,6 +96,17 @@ from .tools_social import (
     retweet_tweet_tool,
     search_tweets_tool,
 )
+from .tools_reddit import (
+    delete_submission_tool,
+    get_inbox_tool,
+    get_trending_subreddits_tool,
+    get_user_karma_tool,
+    post_comment_tool,
+    post_submission_tool,
+    reddit_check_account_health_tool,
+    reddit_check_visibility_tool,
+    search_subreddit_tool,
+)
 
 # MCP (Model Context Protocol) integration — browser automation, fetch, etc.
 try:
@@ -117,6 +128,10 @@ class FerroxAgent:
         # Activate skill if x_bot_expert role
         if agent_role == "x_bot_expert":
             self.skill_manager.activate_skill("x_bot")
+
+        # Activate skill if reddit_bot_expert role
+        if agent_role == "reddit_bot_expert":
+            self.skill_manager.activate_skill("reddit_bot")
 
         # Initial model setup
         model = self._get_model_from_config()
@@ -175,6 +190,27 @@ class FerroxAgent:
             "  If it fails, tell user to run '/social start' first.\n\n"
             "When in SOCIAL mode (activated via /social start), the user's X account is already connected.\n"
             "You should proactively offer to use X tools when relevant.\n"
+            "\n\n## SOCIAL / REDDIT AUTOMATION TOOLS\n"
+            "You are running inside FerroxCLI — an AI-powered terminal assistant with built-in Reddit automation.\n"
+            "The user's Reddit account may be connected via '/reddit login' (OAuth) or '/reddit login-browser' (cookies).\n"
+            "When in SOCIAL mode (activated via /social start or /reddit start), the relevant account is connected.\n"
+            "You should proactively offer to use Reddit tools when relevant.\n\n"
+            "Available Reddit tools and when to use them:\n"
+            "- post_submission_tool(subreddit, title, text, url) — Use when user says 'post to r/subreddit', 'submit to reddit', 'make a reddit post'\n"
+            "- post_comment_tool(post_id, text) — Use when user says 'comment on this post', 'reply to reddit post'\n"
+            "- search_subreddit_tool(subreddit, query) — Use when user asks 'search reddit for...', 'find posts about...'\n"
+            "- reddit_check_account_health_tool() — Use when user asks about their Reddit account status, karma, or health\n"
+            "- get_trending_subreddits_tool() — Use when user asks 'what's trending on reddit', 'popular subreddits'\n"
+            "- get_user_karma_tool() — Use when user asks 'what's my karma', 'karma breakdown'\n"
+            "- delete_submission_tool(post_id) — Use when user asks to delete a post\n"
+            "- get_inbox_tool(limit) — Use when user asks 'check my reddit messages', 'reddit inbox'\n"
+            "- reddit_check_visibility_tool(post_id) — Use when user asks if a post is visible/shadowbanned.\n\n"
+            "Important Reddit rules:\n"
+            "- If user says 'post to r/technology about AI' -> IMMEDIATELY call post_submission_tool.\n"
+            "- If user asks about their karma -> IMMEDIATELY call get_user_karma_tool.\n"
+            "- NEVER ask the user to 'go to Reddit' or 'log in manually' — Ferrox handles this.\n"
+            "- If NOT in SOCIAL mode but user asks about Reddit, call the tool anyway if session exists.\n"
+            "  If it fails, tell user to run '/reddit start' first.\n"
             f"\n\nYou are running on {os.name} ({'Windows' if os.name == 'nt' else 'Unix-like'}). "
             "Use OS-appropriate shell commands (e.g., 'dir' or 'cls' on Windows, 'ls' or 'clear' on Unix)."
             "\n\n## MCP (BROWSER / WEB) TOOLS\n"
@@ -252,6 +288,16 @@ class FerroxAgent:
         self._agent.tool(like_tweet_tool)
         self._agent.tool(retweet_tweet_tool)
         self._agent.tool(delete_tweet_tool)
+        # Reddit Bot tools
+        self._agent.tool(reddit_check_account_health_tool)
+        self._agent.tool(search_subreddit_tool)
+        self._agent.tool(post_submission_tool)
+        self._agent.tool(post_comment_tool)
+        self._agent.tool(get_trending_subreddits_tool)
+        self._agent.tool(get_user_karma_tool)
+        self._agent.tool(reddit_check_visibility_tool)
+        self._agent.tool(delete_submission_tool)
+        self._agent.tool(get_inbox_tool)
 
     def _build_mcp_toolsets(self):
         """Build MCPServerStdio instances from FerroxConfig.
@@ -437,15 +483,33 @@ class FerroxAgent:
                     self._agent.model = self._get_model_from_config(actual_model_name)
                     self._log_thought(f"Switched to model: {actual_model_name}")
 
-                # ── SOCIAL MODE: Inject X account context ──
+                # ── SOCIAL MODE: Inject account context ──
                 augmented_prompt = user_prompt
                 if mode == Mode.SOCIAL:
-                    augmented_prompt = (
-                        "[SOCIAL MODE ACTIVE — user's X account is connected. "
-                        "Use social tools directly when relevant. "
-                        "Do NOT ask the user to 'go to X.com' or 'log in manually'.]\n\n"
-                        + augmented_prompt
-                    )
+                    from ..reddit_daemon import get_daemon_status as reddit_daemon_status
+                    from ..social_daemon import get_daemon_status as x_daemon_status
+                    reddit_status = reddit_daemon_status()
+                    x_status = x_daemon_status()
+                    if reddit_status.get("running") and reddit_status.get("session_valid"):
+                        augmented_prompt = (
+                            "[SOCIAL MODE ACTIVE — user's Reddit account is connected. "
+                            "Use Reddit tools directly when relevant. "
+                            "Do NOT ask the user to 'go to Reddit' or 'log in manually'.]\n\n"
+                            + augmented_prompt
+                        )
+                    elif x_status.get("running") and x_status.get("session_valid"):
+                        augmented_prompt = (
+                            "[SOCIAL MODE ACTIVE — user's X account is connected. "
+                            "Use social tools directly when relevant. "
+                            "Do NOT ask the user to 'go to X.com' or 'log in manually'.]\n\n"
+                            + augmented_prompt
+                        )
+                    else:
+                        augmented_prompt = (
+                            "[SOCIAL MODE ACTIVE — no active social session detected. "
+                            "Ask user to run '/social start' for X or '/reddit start' for Reddit.]\n\n"
+                            + augmented_prompt
+                        )
 
                 # ── PRE-SEARCH: Local models often can't use tools reliably ──
                 # Detect if the user wants web info and fetch it BEFORE calling the model

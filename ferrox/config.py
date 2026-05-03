@@ -13,6 +13,7 @@ load_dotenv()
 
 
 from .providers.config import ProviderConfig, SubagentConfig
+from .reddit_config import RedditConfig
 from .social_config import SocialConfig
 
 
@@ -41,6 +42,9 @@ class FerroxConfig(BaseModel):
     )
     social: Optional[SocialConfig] = Field(
         default=None, description="X Bot social media configuration"
+    )
+    reddit: Optional[RedditConfig] = Field(
+        default=None, description="Reddit Bot configuration"
     )
     mcp_servers: List[McpServerConfig] = Field(
         default_factory=list, description="External MCP servers (Playwright, Fetch, etc.)"
