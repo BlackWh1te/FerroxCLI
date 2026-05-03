@@ -505,7 +505,7 @@ async def post_submission_tool(
         post_record = {
             "id": submission.id,
             "title": title[:100],
-            "hash": hashlib.md5(title.lower().encode()).hexdigest()[:16],
+            "hash": hashlib.md5(title.lower().encode(), usedforsecurity=False).hexdigest()[:16],
             "subreddit": subreddit,
             "posted_at": datetime.now().isoformat(),
         }
