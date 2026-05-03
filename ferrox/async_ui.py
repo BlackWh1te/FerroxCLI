@@ -323,7 +323,7 @@ def create_prompt_session(mode_manager=None, config=None, session_state=None):
     return PromptSession(
         history=FileHistory(history_file),
         completer=SlashCommandCompleter(),
-        complete_style=CompleteStyle.COLUMN,
+        complete_style=CompleteStyle.MULTI_COLUMN,
         complete_while_typing=True,
         style=DEVIN_STYLE,
         message=message_callable,
@@ -424,13 +424,14 @@ def create_busy_session(mode_manager=None, config=None, session_state=None):
         message=busy_message,
         bottom_toolbar=busy_toolbar,
         completer=SlashCommandCompleter(),
-        complete_style=CompleteStyle.COLUMN,
+        complete_style=CompleteStyle.MULTI_COLUMN,
         complete_while_typing=True,
         key_bindings=kb,
         placeholder=HTML(
             "<placeholder>/btw &lt;message&gt; to inject context  ·  Ctrl+C to stop</placeholder>"
         ),
         multiline=False,
+        reserve_space_for_menu=8,
     )
 
 
