@@ -108,7 +108,7 @@ async def api_test_tool(
                     json.loads(body)
                     request_headers["Content-Type"] = "application/json"
                     request_body = body
-                except:
+                except json.JSONDecodeError:
                     # Use as plain text
                     request_body = body
 
@@ -158,7 +158,7 @@ async def api_test_tool(
                 output += json.dumps(response_json, indent=2)[:2000]  # Limit to 2000 chars
                 if len(json.dumps(response_json, indent=2)) > 2000:
                     output += "\n... (truncated)"
-            except:
+            except json.JSONDecodeError:
                 output += f"\nResponse Body (text, {len(response.content)} chars):\n"
                 output += response.text[:2000]
                 if len(response.text) > 2000:
@@ -481,7 +481,7 @@ async def api_diff_tool(ctx: RunContext, url1: str, url2: str, method: str = "GE
                         output += f"  Only in response 1: {only_in_1}\n"
                     if only_in_2:
                         output += f"  Only in response 2: {only_in_2}\n"
-            except:
+            except (json.JSONDecodeError, TypeError, ValueError):
                 output += "Could not compare as JSON (responses may not be JSON)\n"
 
             if _current_agent:

@@ -141,7 +141,7 @@ class PermissionPrompt:
 class TerminalState:
     """Manages terminal state and rendering"""
 
-    def __init__(self, mode_manager, on_submit: Callable = None):
+    def __init__(self, mode_manager, on_submit: Callable = None, model_name: str = None):
         self.mode_manager = mode_manager
         self.on_submit = on_submit
         self.slash_menu = SlashCommandMenu()
@@ -149,7 +149,11 @@ class TerminalState:
         self.chat_history: List[Dict[str, str]] = []
         self.tool_outputs: List[str] = []
         self.input_buffer = Buffer()
-        self.model_name = "llama3.2:latest"
+        if model_name is None:
+            from .config import get_default_config
+            provider = get_default_config().get_active_provider()
+            model_name = f"{provider.type}:{provider.default_model}" if provider else "unknown"
+        self.model_name = model_name
         self.context_tokens = 2000
         self.max_tokens = 128000
 
@@ -303,7 +307,7 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
                 border_style="green",
                 padding=(0, 1),
             )
-        except:
+        except (SyntaxError, ValueError, TypeError):
             return Panel(
                 content[:500] + ("..." if len(content) > 500 else ""),
                 title=f"[read_file] {header}",
@@ -390,7 +394,7 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
     finally:
         try:
             os.unlink(temp_path)
-        except:
+        except (OSError, FileNotFoundError, PermissionError):
             pass
 
 

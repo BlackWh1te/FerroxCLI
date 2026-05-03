@@ -652,7 +652,7 @@ async def check_visibility_tool(ctx: RunContext, tweet_id: str) -> str:
             if tweet:
                 _log_tool_result("check_visibility", "Tweet is visible", True)
                 return f"✅ Tweet {tweet_id} is visible and indexed."
-        except:
+        except Exception:
             pass
 
         # If not found directly, search for text

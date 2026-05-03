@@ -345,7 +345,7 @@ def parse_tool_from_text(text: str) -> Optional[ToolCall]:
                 params = json.loads(params_str)
 
                 return ToolCall(id=f"call_{tool_name}", name=tool_name, arguments=params)
-            except:
+            except (json.JSONDecodeError, AttributeError, ValueError):
                 pass
 
     return None

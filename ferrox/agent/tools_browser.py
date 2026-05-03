@@ -14,7 +14,7 @@ try:
     from opentelemetry import trace
 
     tracer = trace.get_tracer(__name__)
-except:
+except (ImportError, AttributeError):
     tracer = None
 
 
@@ -24,7 +24,7 @@ def _get_current_agent():
         from ferrox.agent.orchestrator import _current_agent
 
         return _current_agent
-    except:
+    except (ImportError, AttributeError):
         return None
 
 

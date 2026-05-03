@@ -30,7 +30,7 @@ from opentelemetry.sdk.trace import TracerProvider
 
 try:
     trace.set_tracer_provider(TracerProvider())
-except:
+except Exception:
     pass
 tracer = trace.get_tracer(__name__)
 

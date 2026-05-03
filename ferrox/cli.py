@@ -341,10 +341,12 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
         # Memory Management
         if current_tokens > TOKEN_LIMIT:
             console.print("[dim]🧠 Compressing memory...[/dim]")
+            provider = config.get_active_provider()
+            model_name = provider.default_model if provider else "gpt-4o"
             summary = summarize_history(
                 chat_history,
                 fallback_engine,
-                config.get_active_provider().default_model or "gpt-4o",
+                model_name,
             )
             # Logic to reset history_manager if needed
             # ...
@@ -1248,7 +1250,7 @@ def start(verbose, no_animation):
                 console.print("[green]Created default Ollama configuration.[/green]")
             else:
                 raise Exception("Ollama not responding")
-        except:
+        except Exception:
             console.print("[yellow]Ollama not detected or unreachable.[/yellow]")
             response = console.input("Configure manually? [Y/n]: ")
             if response.strip().lower() in ("", "y", "yes"):

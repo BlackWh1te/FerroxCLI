@@ -320,14 +320,14 @@ class FerroxAgent:
 
         # 3. Handle OpenAI-compatible (Custom) providers with base_url
         if active_provider.base_url:
-            from pydantic_ai.models.openai import OpenAIModel
+            from pydantic_ai.models.openai import OpenAIChatModel
             from pydantic_ai.providers.openai import OpenAIProvider
 
             provider = OpenAIProvider(
                 base_url=active_provider.base_url, api_key=active_provider.api_key or "no-key"
             )
-            # Use OpenAIModel with custom provider for local/compatible endpoints
-            return OpenAIModel(model_name, provider=provider)
+            # Use OpenAIChatModel with custom provider for local/compatible endpoints
+            return OpenAIChatModel(model_name, provider=provider)
 
         # Default to whatever pydantic-ai can infer or just the name
         return model_name

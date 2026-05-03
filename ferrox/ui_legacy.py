@@ -21,6 +21,8 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 
+from ferrox.config import get_default_config
+
 console = Console()
 
 custom_style = Style.from_dict(
@@ -147,7 +149,12 @@ class FerroxUI:
 
     def get_status_bar_text(self) -> List:
         """Generate status bar text"""
-        model = "llama3.2:latest"
+        try:
+            config = get_default_config()
+            provider = config.get_active_provider()
+            model = f"{provider.type}:{provider.default_model}" if provider and provider.default_model else "no model"
+        except Exception:
+            model = "unknown"
         tokens_used = "2k"
         tokens_max = "128k"
 
@@ -411,7 +418,7 @@ def get_user_input(mode_manager, on_cycle_callback: Optional[Callable] = None) -
         print(f"{mode_indicator} > ", end="", flush=True)
         try:
             return sys.stdin.readline().strip() or None
-        except:
+        except (OSError, EOFError, ValueError):
             return None
 
 

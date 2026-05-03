@@ -16,7 +16,7 @@ class HistoryManager:
             try:
                 with open(self.history_file) as f:
                     self.history = json.load(f)
-            except:
+            except (json.JSONDecodeError, OSError, FileNotFoundError, PermissionError):
                 self.history = []
 
     def save(self):

@@ -64,9 +64,9 @@ def load_skill(skill_name: str) -> dict:
                     if "SKILL_VERSION" in line:
                         try:
                             result["version"] = line.split("=")[1].strip().strip('"')
-                        except:
+                        except (IndexError, ValueError, AttributeError):
                             pass
-        except:
+        except (OSError, FileNotFoundError, PermissionError):
             pass
 
     # Load SKILL.md content

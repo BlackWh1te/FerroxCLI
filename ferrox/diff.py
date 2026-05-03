@@ -128,7 +128,7 @@ def prompt_accept_reject(filename: str, timeout: int = 30) -> Optional[bool]:
                     return "edit"
             finally:
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        except:
+        except (OSError, termios.error, AttributeError):
             pass
 
     response = input("> ").strip().lower()
