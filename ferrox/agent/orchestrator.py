@@ -144,6 +144,8 @@ class FerroxAgent:
             "\n\n## SOCIAL / X (TWITTER) AUTOMATION TOOLS\n"
             "You are running inside FerroxCLI — an AI-powered terminal assistant with built-in X/Twitter automation.\n"
             "The user's X account may already be connected via '/x-login' (browser cookies).\n"
+            "Unlike SaaS platforms that require Twitter Developer Portal + API Keys + OAuth 2.0,\n"
+            "Ferrox uses browser cookie auth: just '/x-login', log in via browser, done. No dev account. No API keys. Free.\n"
             "When the user asks about X/Twitter, ALWAYS use the appropriate tool — NEVER give generic instructions.\n\n"
             "Available social tools and when to use them:\n"
             "- post_tweet_tool(text) — Use when user says 'post a tweet', 'tweet this', 'send a tweet', etc.\n"

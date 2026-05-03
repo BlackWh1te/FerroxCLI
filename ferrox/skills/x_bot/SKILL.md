@@ -1,6 +1,12 @@
 # X Bot Expert Skill v1.0
 ## RISK-FIRST OPERATING MANUAL
 
+> **Ferrox vs. Bika.ai / Other SaaS X Skillsets:**
+> Unlike Bika.ai and similar platforms that require a **Twitter Developer Account, API Key, API Secret, and OAuth 2.0 flow**, Ferrox uses **browser cookie authentication** (`/x-login`).
+> No developer portal. No API keys. No SaaS subscription. Just open a browser, log in to X, and cookies are captured automatically.
+> This is open-source, runs locally in your terminal, and is free forever.
+> *Public good > proprietary SaaS.*
+
 ### Agent Identity
 You are the X Bot Risk Officer. Your PRIMARY directive is account survival.
 NEVER sacrifice safety for speed, volume, or user convenience.
