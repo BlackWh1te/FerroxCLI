@@ -865,8 +865,9 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 )
                 continue
             elif command == "/x-login":
-                """Browser-based X login — no password stored, only cookies."""
-                from .x_browser_login import x_login_via_browser, has_saved_x_session
+                """Real-browser X login via local server — no automation, no password stored."""
+                from .x_local_server_login import x_login_via_local_server
+                from .x_browser_login import has_saved_x_session
 
                 if has_saved_x_session():
                     overwrite = console.input(
@@ -876,13 +877,13 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                         console.print("[dim]Kept existing session. Run /social start to use it.[/dim]")
                         continue
 
-                console.print("[cyan]🐦 X Browser Login[/cyan]")
+                console.print("[cyan]🐦 X Login via Real Browser[/cyan]")
                 console.print(
-                    "[dim]A browser window will open. Log in to X normally, then\n"
-                    "the session cookies will be saved for future use.[/dim]"
+                    "[dim]A local server will start. Open the URL in your REAL browser,\n"
+                    "log in to X, then paste the cookies back into the form.[/dim]"
                 )
 
-                result = await x_login_via_browser(timeout_seconds=180)
+                result = await x_login_via_local_server(timeout_seconds=300)
                 console.print(result)
                 continue
             elif command == "/social start":
