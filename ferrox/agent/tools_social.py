@@ -315,6 +315,14 @@ Recommendations:
             state.session_valid = False
             save_social_state(state)
             _log_tool_result("check_account_health", f"Session invalid: {str(e)}", False)
+            err_msg = str(e)
+            if "KEY_BYTE" in err_msg or "indices" in err_msg or "ClientTransaction" in err_msg:
+                return (
+                    "X API Error: Twikit is incompatible with X's current API response format.\n"
+                    "This is a known upstream issue (not a Ferrox bug).\n"
+                    "Try: pip install --upgrade twikit  (or wait for a fix).\n"
+                    f"Details: {err_msg[:120]}"
+                )
             return f"Session invalid. Please run /social login first.\nError: {e}"
     
     except Exception as e:
@@ -373,6 +381,13 @@ async def search_tweets_tool(
         
     except Exception as e:
         _log_tool_result("search_tweets", str(e), False)
+        err_msg = str(e)
+        if "KEY_BYTE" in err_msg or "indices" in err_msg or "ClientTransaction" in err_msg:
+            return (
+                "X API Error: Twikit is incompatible with X's current API response format.\n"
+                "This is a known upstream issue (not a Ferrox bug).\n"
+                f"Details: {err_msg[:120]}"
+            )
         return f"Error searching tweets: {e}"
 
 
@@ -494,6 +509,13 @@ async def post_tweet_tool(
         save_social_state(state)
         
         _log_tool_result("post_tweet", str(e), False)
+        err_msg = str(e)
+        if "KEY_BYTE" in err_msg or "indices" in err_msg or "ClientTransaction" in err_msg:
+            return (
+                "X API Error: Twikit is incompatible with X's current API response format.\n"
+                "This is a known upstream issue (not a Ferrox bug).\n"
+                f"Details: {err_msg[:120]}"
+            )
         return f"Error posting tweet: {e}"
 
 
@@ -559,6 +581,13 @@ async def post_thread_tool(ctx: RunContext, texts: List[str]) -> str:
         
     except Exception as e:
         _log_tool_result("post_thread", str(e), False)
+        err_msg = str(e)
+        if "KEY_BYTE" in err_msg or "indices" in err_msg or "ClientTransaction" in err_msg:
+            return (
+                "X API Error: Twikit is incompatible with X's current API response format.\n"
+                "This is a known upstream issue (not a Ferrox bug).\n"
+                f"Details: {err_msg[:120]}"
+            )
         return f"Error posting thread: {e}"
 
 
@@ -592,6 +621,13 @@ async def get_recent_posts_tool(ctx: RunContext, count: int = 20) -> str:
         
     except Exception as e:
         _log_tool_result("get_recent_posts", str(e), False)
+        err_msg = str(e)
+        if "KEY_BYTE" in err_msg or "indices" in err_msg or "ClientTransaction" in err_msg:
+            return (
+                "X API Error: Twikit is incompatible with X's current API response format.\n"
+                "This is a known upstream issue (not a Ferrox bug).\n"
+                f"Details: {err_msg[:120]}"
+            )
         return f"Error getting recent posts: {e}"
 
 
