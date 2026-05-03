@@ -2,6 +2,25 @@
 
 import sys
 import os
+
+# ── Windows console UTF-8 fix (must run before any emoji output) ──
+if os.name == "nt":
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)  # UTF-8
+        ctypes.windll.kernel32.SetConsoleCP(65001)
+    except Exception:
+        pass
+    # Also try to reconfigure stdout/stderr
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+    try:
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import subprocess
 from pathlib import Path
 from typing import Optional
