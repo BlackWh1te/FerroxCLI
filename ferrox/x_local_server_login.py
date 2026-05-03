@@ -111,47 +111,72 @@ function submitCookies() {
   const status = document.getElementById('status');
   if (!raw) {
     status.className = 'status err';
-    status.textContent = 'Please paste cookie JSON first.';
+    status.textContent = 'Please paste cookies first.';
     status.classList.remove('hidden');
     return;
   }
-  let parsed;
+
+  let parsed = null;
+
+  // Try 1: Direct JSON
   try {
-    parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      // Try to handle plain object with name:value pairs
-      if (typeof parsed === 'object' && parsed !== null) {
-        parsed = Object.entries(parsed).map(([k,v]) => ({
-          name:k, value:typeof v==='string'?v:JSON.stringify(v), domain:'.x.com', path:'/'
-        }));
-      } else {
-        throw new Error('not an array');
-      }
+    const j = JSON.parse(raw);
+    if (Array.isArray(j)) { parsed = j; }
+    else if (typeof j === 'object' && j !== null) {
+      parsed = Object.entries(j).map(([k,v]) => ({
+        name:k, value:typeof v==='string'?v:JSON.stringify(v), domain:'.x.com', path:'/'
+      }));
     }
-  } catch(e) {
-    // Try netscape format: domain	flag	path	secure	expires	name	value
-    const lines = raw.split('\\n').filter(l=>l.trim()&&!l.startsWith('#'));
-    if (lines.length && lines[0].includes('\\t')) {
-      parsed = lines.map(line => {
-        const parts = line.split('\\t');
-        return {
-          domain: parts[0] || '.x.com',
-          path: parts[2] || '/',
-          secure: (parts[3]||'').toLowerCase()==='true',
-          name: parts[5] || '',
-          value: parts[6] || ''
-        };
-      });
-    } else {
-      status.className = 'status err';
-      status.textContent = 'Invalid JSON. Please copy the full cookie array from DevTools.';
-      status.classList.remove('hidden');
-      return;
+  } catch(e) {}
+
+  // Try 2: Tab-separated text (Chrome DevTools "Copy all")
+  if (!parsed) {
+    const lines = raw.split('
+').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    if (lines.length > 0 && lines[0].includes('	')) {
+      const parts = lines[0].split('	');
+      // Chrome DevTools format: name value domain path expires/size httpOnly secure sameSite priority PartitionKey
+      const isDevtools = parts.length >= 8 && ((parts[2]||'').includes('.x.com') || (parts[2]||'').includes('x.com'));
+      // Netscape format: domain flag path secure expires name value
+      const isNetscape = parts.length >= 7 && ((parts[0]||'').includes('.x.com') || (parts[0]||'').includes('x.com'));
+
+      if (isDevtools) {
+        const dataLines = lines.filter(l => !l.toLowerCase().startsWith('name	'));
+        parsed = dataLines.map(line => {
+          const p = line.split('	');
+          return {
+            name:  (p[0] || '').trim(),
+            value: (p[1] || '').trim(),
+            domain:(p[2] || '.x.com').trim(),
+            path:  (p[3] || '/').trim(),
+            secure: (p[7]||'').toString().includes('✓') || (p[7]||'').toString().toLowerCase()==='true',
+            httpOnly: (p[6]||'').toString().includes('✓') || (p[6]||'').toString().toLowerCase()==='true',
+          };
+        }).filter(c => c.name && c.value);
+      } else if (isNetscape) {
+        parsed = lines.map(line => {
+          const p = line.split('	');
+          return {
+            domain: (p[0] || '.x.com').trim(),
+            path:   (p[2] || '/').trim(),
+            secure: (p[3] || '').toLowerCase()==='true',
+            name:   (p[5] || '').trim(),
+            value:  (p[6] || '').trim(),
+          };
+        }).filter(c => c.name && c.value);
+      }
     }
   }
 
+  if (!parsed || parsed.length === 0) {
+    status.className = 'status err';
+    status.textContent = 'Could not parse cookies. Use Chrome DevTools: Application -> Cookies -> https://x.com -> right-click -> Copy all. Or use the bookmarklet.';
+    status.classList.remove('hidden');
+    return;
+  }
+
   status.className = 'status ok';
-  status.textContent = 'Saving...';
+  status.textContent = 'Parsed ' + parsed.length + ' cookies. Saving...';
   status.classList.remove('hidden');
 
   fetch('/save', {

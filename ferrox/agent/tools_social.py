@@ -111,83 +111,88 @@ def _get_twikit_client(config: SocialConfig):
     browser_cookie_path = Path.home() / ".ferrox" / "twikit_cookies.json"
     if browser_cookie_path.exists():
         try:
-            # Browser login saves in Playwright JSON format which may wrap
-            # cookies in {"cookies": [...]}; twikit may expect a flat list.
-            # We attempt direct load first, then extract if needed.
-            client.load_cookies(str(browser_cookie_path))
-            return client
-        except Exception:
-            # If twikit failed to parse, try extracting the inner list
-            try:
-                import json
+            import json
 
-                with open(browser_cookie_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                if isinstance(data, dict) and "cookies" in data:
-                    # Save a temporary flat list for twikit
-                    flat_path = browser_cookie_path.with_suffix(".flat.json")
-                    with open(flat_path, "w", encoding="utf-8") as f:
-                        json.dump(data["cookies"], f)
-                    client.load_cookies(str(flat_path))
-                    return client
-            except Exception:
-                pass
+            with open(browser_cookie_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Twikit accepts both JSON list (load_cookies) and dict (set_cookies).
+            # We save as a simple dict {name: value} for maximum compatibility.
+            if isinstance(data, dict):
+                cookie_dict = data
+            elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                cookie_dict = {
+                    c["name"]: c["value"] for c in data if "name" in c and "value" in c
+                }
+            else:
+                cookie_dict = None
+
+            if cookie_dict:
+                client.set_cookies(cookie_dict)
+                return client
+        except Exception:
+            pass
 
     return client
 
 
 def validate_x_session() -> Optional[Dict[str, Any]]:
-    """Validate the current X session by fetching user info.
+    """Validate the current X session.
+
+    Checks if cookies exist in the format twikit expects.
+    Note: Due to X API changes, twikit may fail at runtime.
+    This function validates cookie presence, not live API access.
 
     Returns:
-        Dict with user data (screen_name, name, followers_count, etc.)
-        or None if session is invalid / not logged in.
+        Dict with placeholder user data if cookies look valid,
+        or None if no valid session cookies found.
     """
-    try:
-        from twikit import Client
-    except ImportError:
+    cookie_path = Path.home() / ".ferrox" / "twikit_cookies.json"
+    if not cookie_path.exists():
         return None
 
-    client = Client()
+    try:
+        import json
+        with open(cookie_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
 
-    # Try browser-login cookies
-    cookie_path = Path.home() / ".ferrox" / "twikit_cookies.json"
-    if cookie_path.exists():
-        try:
-            client.load_cookies(str(cookie_path))
-        except Exception:
-            # Try flat extract fallback
-            try:
-                import json
-                with open(cookie_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                if isinstance(data, dict) and "cookies" in data:
-                    flat_path = cookie_path.with_suffix(".flat.json")
-                    with open(flat_path, "w", encoding="utf-8") as f:
-                        json.dump(data["cookies"], f)
-                    client.load_cookies(str(flat_path))
-                else:
-                    return None
-            except Exception:
-                return None
+    # Twikit expects a simple dict: {name: value, ...}
+    if isinstance(data, dict):
+        cookie_dict = data
+    elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+        # Convert list format to dict
+        cookie_dict = {c["name"]: c["value"] for c in data if "name" in c and "value" in c}
     else:
         return None
 
-    try:
-        # Twikit sync call — get current user
-        user = client.user()
-        return {
-            "screen_name": getattr(user, "screen_name", "unknown"),
-            "name": getattr(user, "name", "unknown"),
-            "followers_count": getattr(user, "followers_count", 0),
-            "following_count": getattr(user, "friends_count", 0),
-            "statuses_count": getattr(user, "statuses_count", 0),
-            "created_at": getattr(user, "created_at", None),
-            "verified": getattr(user, "verified", False),
-            "profile_image_url": getattr(user, "profile_image_url", None),
-        }
-    except Exception:
+    # Check for critical session cookies
+    required = {"auth_token", "ct0"}
+    present = set(cookie_dict.keys())
+    if not required.issubset(present):
         return None
+
+    # Try to load with twikit (best-effort, may fail due to X API changes)
+    try:
+        from twikit import Client
+        client = Client()
+        client.set_cookies(cookie_dict)
+    except Exception:
+        pass  # twikit may have compatibility issues, but cookies are present
+
+    # Return placeholder info — actual user data will come from tool calls
+    return {
+        "screen_name": "(unknown — will be fetched via tool call)",
+        "name": "(unknown — will be fetched via tool call)",
+        "followers_count": 0,
+        "following_count": 0,
+        "statuses_count": 0,
+        "created_at": None,
+        "verified": False,
+        "profile_image_url": None,
+        "_cookie_dict": cookie_dict,
+    }
 
 
 def _log_tool_call(name: str, args: dict):

@@ -925,17 +925,23 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                     continue
 
                 # ── Step 2: Display account info ──
-                console.print("\n[bold cyan]🐦 X Account Connected[/bold cyan]")
-                console.print("───────────────────────────────────────────────")
-                console.print(f"  Name:     [bold]{user_info['name']}[/bold]")
-                console.print(f"  @ handle: [bold]@{user_info['screen_name']}[/bold]")
-                console.print(
-                    f"  Followers: {user_info['followers_count']:,}  │  "
-                    f"Following: {user_info['following_count']:,}"
-                )
-                console.print(f"  Tweets:    {user_info['statuses_count']:,}")
-                if user_info.get("verified"):
-                    console.print("  [yellow]✓ Verified[/yellow]")
+                is_placeholder = user_info["name"].startswith("(")
+                if is_placeholder:
+                    console.print("\n[bold cyan]🐦 X Session Cookies Valid[/bold cyan]")
+                    console.print("───────────────────────────────────────────────")
+                    console.print("  [dim]Cookies loaded — twikit/X API compatibility may affect live data retrieval.[/dim]")
+                else:
+                    console.print("\n[bold cyan]🐦 X Account Connected[/bold cyan]")
+                    console.print("───────────────────────────────────────────────")
+                    console.print(f"  Name:     [bold]{user_info['name']}[/bold]")
+                    console.print(f"  @ handle: [bold]@{user_info['screen_name']}[/bold]")
+                    console.print(
+                        f"  Followers: {user_info['followers_count']:,}  │  "
+                        f"Following: {user_info['following_count']:,}"
+                    )
+                    console.print(f"  Tweets:    {user_info['statuses_count']:,}")
+                    if user_info.get("verified"):
+                        console.print("  [yellow]✓ Verified[/yellow]")
                 console.print("───────────────────────────────────────────────\n")
 
                 # ── Step 3: Switch to SOCIAL mode ──
