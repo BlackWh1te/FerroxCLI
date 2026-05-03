@@ -28,7 +28,13 @@ def reset_step_counter():
 
 
 def format_agent_thought(thought: str, step: int = None) -> None:
-    """Print an agent thinking/reasoning step with enhanced visibility."""
+    """Print an agent thinking/reasoning step — only important events shown.
+
+    Routine [THINK] logs (model switches, prompt conversions, etc.) are
+    suppressed to avoid terminal spam. Only START, TOOL calls, OK,
+    ERROR, and LINK events are printed. Full thoughts are still available
+    via /thoughts or /verbose.
+    """
     global _agent_step_counter
     if step is None:
         _agent_step_counter += 1
@@ -49,7 +55,8 @@ def format_agent_thought(thought: str, step: int = None) -> None:
     elif "Starting" in thought or "initiating" in thought.lower():
         label = "[START]"
     else:
-        label = "[THINK]"
+        # Suppress routine THINK noise — not printed to terminal
+        return
     console.file.write(f"  {label} {thought}\n")
     console.file.flush()
 

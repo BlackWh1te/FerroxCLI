@@ -141,13 +141,32 @@ class FerroxAgent:
             "- Format news with clear sections: Headlines, Key Facts, Sources\n"
             "- Be specific: include dates, names, locations, numbers\n"
             "- Synthesize multiple sources into a coherent answer\n"
-            "\n\n## SOCIAL / X (TWITTER) BOT TOOLS\n"
-            "- When the user asks about connecting their X (Twitter) account, RECOMMEND '/x-login' first — it opens a browser for one-time login and saves only session cookies (no password stored).\n"
-            "- Fallback: '/social login' prompts for username/password manually (credentials stored in config).\n"
-            "- You have tools to check account health, post tweets, post threads, search tweets, check trends, get mentions, like, retweet, and delete tweets.\n"
-            "- To activate X Bot Expert mode (with enhanced anti-ban guidance), the user should run '/x-mode'.\n"
-            "- The social tools use twikit (unofficial X API) which does NOT require OAuth tokens.\n"
-            "- NEVER ask the user for API keys, bearer tokens, or OAuth credentials. Direct them to '/x-login' or '/social login' instead.\n"
+            "\n\n## SOCIAL / X (TWITTER) AUTOMATION TOOLS\n"
+            "You are running inside FerroxCLI — an AI-powered terminal assistant with built-in X/Twitter automation.\n"
+            "The user's X account may already be connected via '/x-login' (browser cookies).\n"
+            "When the user asks about X/Twitter, ALWAYS use the appropriate tool — NEVER give generic instructions.\n\n"
+            "Available social tools and when to use them:\n"
+            "- post_tweet_tool(text) — Use when user says 'post a tweet', 'tweet this', 'send a tweet', etc.\n"
+            "- post_thread_tool(tweets: list[str]) — Use when user wants multiple connected tweets.\n"
+            "- search_tweets_tool(query, max_results) — Use when user asks 'search X for...', 'find tweets about...'\n"
+            "- check_account_health_tool() — Use when user asks 'how's my account', 'check my X status'\n"
+            "- get_trends_tool() — Use when user asks 'what's trending', 'show trends'\n"
+            "- get_mentions_tool(max_results) — Use when user asks 'check my mentions', 'who mentioned me'\n"
+            "- like_tweet_tool(tweet_id) — Use when user asks to like a specific tweet.\n"
+            "- retweet_tweet_tool(tweet_id) — Use when user asks to retweet.\n"
+            "- delete_tweet_tool(tweet_id) — Use when user asks to delete a tweet.\n"
+            "- get_recent_posts_tool(max_results) — Use when user asks 'show my recent tweets'\n"
+            "- check_visibility_tool() — Use when user asks if their account is shadowbanned.\n\n"
+            "Important rules:\n"
+            "- If user says 'post a tweet about AI' → IMMEDIATELY call post_tweet_tool with appropriate text.\n"
+            "- If user says 'reply to my mentions' → FIRST get_mentions_tool, THEN decide replies.\n"
+            "- If user says 'what's trending' → IMMEDIATELY call get_trends_tool.\n"
+            "- If user asks about their account → call check_account_health_tool.\n"
+            "- NEVER ask the user to 'go to X.com' or 'log in manually' — Ferrox handles this via cookies.\n"
+            "- If the user asks about connecting their X account, RECOMMEND '/x-login' first.\n"
+            "- NEVER ask for API keys, bearer tokens, or OAuth credentials.\n\n"
+            "When in SOCIAL mode (activated via /social start), the user's X account is already connected.\n"
+            "You should proactively offer to use X tools when relevant.\n"
             f"\n\nYou are running on {os.name} ({'Windows' if os.name == 'nt' else 'Unix-like'}). "
             "Use OS-appropriate shell commands (e.g., 'dir' or 'cls' on Windows, 'ls' or 'clear' on Unix)."
         )
@@ -359,10 +378,19 @@ class FerroxAgent:
                     self._agent.model = self._get_model_from_config(actual_model_name)
                     self._log_thought(f"Switched to model: {actual_model_name}")
 
+                # ── SOCIAL MODE: Inject X account context ──
+                augmented_prompt = user_prompt
+                if mode == Mode.SOCIAL:
+                    augmented_prompt = (
+                        "[SOCIAL MODE ACTIVE — user's X account is connected. "
+                        "Use social tools directly when relevant. "
+                        "Do NOT ask the user to 'go to X.com' or 'log in manually'.]\n\n"
+                        + augmented_prompt
+                    )
+
                 # ── PRE-SEARCH: Local models often can't use tools reliably ──
                 # Detect if the user wants web info and fetch it BEFORE calling the model
                 needs_search, search_query = self._needs_web_search(user_prompt)
-                augmented_prompt = user_prompt
 
                 if needs_search:
                     self._log_thought(f"Detected web query: '{search_query}' — initiating search")

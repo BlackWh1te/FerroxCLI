@@ -8,6 +8,7 @@ class Mode(Enum):
     PLAN = "PLAN"
     BYPASS = "BYPASS"
     EDIT = "EDIT"
+    SOCIAL = "SOCIAL"
 
 
 class ModeManager:
@@ -35,6 +36,7 @@ class ModeManager:
             Mode.PLAN: "#FFA500",
             Mode.EDIT: "#00BFFF",
             Mode.BYPASS: "#FF0000",
+            Mode.SOCIAL: "#1DA1F2",
         }
         color = colors.get(self.current_mode, "#FFFFFF")
         return f"[{self.current_mode.value}]"
@@ -45,11 +47,18 @@ class ModeManager:
             Mode.PLAN: "orange1",
             Mode.EDIT: "deep_sky_blue1",
             Mode.BYPASS: "red",
+            Mode.SOCIAL: "bright_blue",
         }
         return colors.get(self.current_mode, "white")
 
     def get_mode_icon(self) -> str:
-        icons = {Mode.NORMAL: "●", Mode.PLAN: "◎", Mode.EDIT: "✎", Mode.BYPASS: "⚡"}
+        icons = {
+            Mode.NORMAL: "●",
+            Mode.PLAN: "◎",
+            Mode.EDIT: "✎",
+            Mode.BYPASS: "⚡",
+            Mode.SOCIAL: "🐦",
+        }
         return icons.get(self.current_mode, "?")
 
     def get_mode_description(self) -> str:
@@ -58,6 +67,7 @@ class ModeManager:
             Mode.PLAN: "shell allowed, write asks",
             Mode.EDIT: "scoped edits, shell asks",
             Mode.BYPASS: "auto-approve all",
+            Mode.SOCIAL: "X bot automation mode",
         }
         return descriptions.get(self.current_mode, "")
 

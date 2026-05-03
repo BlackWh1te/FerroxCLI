@@ -136,6 +136,60 @@ def _get_twikit_client(config: SocialConfig):
     return client
 
 
+def validate_x_session() -> Optional[Dict[str, Any]]:
+    """Validate the current X session by fetching user info.
+
+    Returns:
+        Dict with user data (screen_name, name, followers_count, etc.)
+        or None if session is invalid / not logged in.
+    """
+    try:
+        from twikit import Client
+    except ImportError:
+        return None
+
+    client = Client()
+
+    # Try browser-login cookies
+    cookie_path = Path.home() / ".ferrox" / "twikit_cookies.json"
+    if cookie_path.exists():
+        try:
+            client.load_cookies(str(cookie_path))
+        except Exception:
+            # Try flat extract fallback
+            try:
+                import json
+                with open(cookie_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and "cookies" in data:
+                    flat_path = cookie_path.with_suffix(".flat.json")
+                    with open(flat_path, "w", encoding="utf-8") as f:
+                        json.dump(data["cookies"], f)
+                    client.load_cookies(str(flat_path))
+                else:
+                    return None
+            except Exception:
+                return None
+    else:
+        return None
+
+    try:
+        # Twikit sync call — get current user
+        user = client.user()
+        return {
+            "screen_name": getattr(user, "screen_name", "unknown"),
+            "name": getattr(user, "name", "unknown"),
+            "followers_count": getattr(user, "followers_count", 0),
+            "following_count": getattr(user, "friends_count", 0),
+            "statuses_count": getattr(user, "statuses_count", 0),
+            "created_at": getattr(user, "created_at", None),
+            "verified": getattr(user, "verified", False),
+            "profile_image_url": getattr(user, "profile_image_url", None),
+        }
+    except Exception:
+        return None
+
+
 def _log_tool_call(name: str, args: dict):
     """Log tool call via current agent."""
     if _current_agent:

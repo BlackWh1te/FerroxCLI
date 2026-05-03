@@ -887,13 +887,51 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 console.print(result)
                 continue
             elif command == "/social start":
-                """Start social bot daemon."""
+                """Validate X session, show account info, start daemon, switch to SOCIAL mode."""
+                from .agent.tools_social import validate_x_session
                 from .social_daemon import start_daemon
                 import threading
 
-                console.print("[cyan]🐦 Starting X Bot daemon...[/cyan]")
+                # ── Step 1: Validate session ──
+                console.print("[cyan]🐦 Validating X session...[/cyan]")
+                user_info = validate_x_session()
 
-                # Run in background thread to not block CLI
+                if not user_info:
+                    console.print(
+                        "[red]❌ X session invalid or expired.[/red]\n"
+                        "[dim]Please log in again:[/dim]\n"
+                        "  • /x-login     — browser login (recommended)\n"
+                        "  • /social login — manual username/password"
+                    )
+                    continue
+
+                # ── Step 2: Display account info ──
+                console.print("\n[bold cyan]🐦 X Account Connected[/bold cyan]")
+                console.print("───────────────────────────────────────────────")
+                console.print(f"  Name:     [bold]{user_info['name']}[/bold]")
+                console.print(f"  @ handle: [bold]@{user_info['screen_name']}[/bold]")
+                console.print(
+                    f"  Followers: {user_info['followers_count']:,}  │  "
+                    f"Following: {user_info['following_count']:,}"
+                )
+                console.print(f"  Tweets:    {user_info['statuses_count']:,}")
+                if user_info.get("verified"):
+                    console.print("  [yellow]✓ Verified[/yellow]")
+                console.print("───────────────────────────────────────────────\n")
+
+                # ── Step 3: Switch to SOCIAL mode ──
+                mode_manager.set_mode("SOCIAL")
+                console.print(
+                    f"[bold bright_blue]🐦 SOCIAL MODE ACTIVE[/bold bright_blue]  "
+                    f"[{mode_manager.get_mode_description()}]"
+                )
+                console.print(
+                    "[dim]The agent now knows about your X account and social tools.\n"
+                    "Just ask naturally: 'post a tweet about AI', 'check my mentions',\n"
+                    "'reply to my last tweet', 'what's trending', etc.[/dim]\n"
+                )
+
+                # ── Step 4: Start background daemon ──
                 def run_daemon():
                     start_daemon()
 
@@ -904,13 +942,18 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 console.print("[dim]Use /social to check status, /social stop to stop.[/dim]")
                 continue
             elif command == "/social stop":
-                """Stop social bot daemon."""
+                """Stop social bot daemon and return to NORMAL mode."""
                 from .social_daemon import stop_daemon
 
                 if stop_daemon():
                     console.print("[green]✅ X Bot daemon stopped.[/green]")
                 else:
                     console.print("[yellow]Daemon was not running.[/yellow]")
+
+                # Exit SOCIAL mode back to NORMAL
+                if mode_manager.current_mode.name == "SOCIAL":
+                    mode_manager.set_mode("NORMAL")
+                    console.print("[dim]Returned to NORMAL mode.[/dim]")
                 continue
             elif command == "/social panic":
                 """Emergency stop and logout."""
@@ -931,6 +974,10 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 from .x_browser_login import clear_x_session
 
                 clear_x_session()
+
+                # Exit SOCIAL mode
+                if mode_manager.current_mode.name == "SOCIAL":
+                    mode_manager.set_mode("NORMAL")
 
                 console.print("[red]✅ Panic complete. Bot stopped, all sessions cleared.[/red]")
                 continue
@@ -1108,7 +1155,8 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
 
             # ── Print assistant response in Devin style ──
             if full_response:
-                model_label = model_id.split(":")[-1] if ":" in model_id else model_id
+                # Show full model name, e.g. "qwen2.5:7b" not just "7b"
+                model_label = model_id.split(":", 1)[1] if ":" in model_id else model_id
                 sep = "─" * 50
                 console.file.write(f"\n{sep}\n")
                 console.file.write(f"{model_label}  {full_response.strip()}\n")

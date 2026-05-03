@@ -35,6 +35,7 @@ DEVIN_STYLE = Style.from_dict(
         "status-mode-plan": "#ffa500 bold",
         "status-mode-edit": "#00bfff bold",
         "status-mode-bypass": "#ff4757 bold",
+        "status-mode-social": "#1da1f2 bold",
         "status-key": "#808080 italic",
         "status-value": "#e0e0e0 bold",
         "status-separator": "#444466",
