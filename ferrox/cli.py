@@ -882,7 +882,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                     "the session cookies will be saved for future use.[/dim]"
                 )
 
-                result = x_login_via_browser(timeout_seconds=180)
+                result = await x_login_via_browser(timeout_seconds=180)
                 console.print(result)
                 continue
             elif command == "/social start":

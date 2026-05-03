@@ -1,11 +1,14 @@
-"""Browser-based X (Twitter) login using Playwright.
+"""Browser-based X (Twitter) login using Playwright (async API).
 
 Opens a visible browser window so the user can log in to X naturally
 (including 2FA and CAPTCHA). After successful login, captures session
 cookies and saves them for twikit reuse. No username or password is ever
 stored — only session cookies.
+
+NOTE: Uses playwright.async_api because Ferrox runs inside an asyncio loop.
 """
 
+import asyncio
 import json
 import os
 from datetime import datetime
@@ -67,7 +70,23 @@ def load_browser_cookies() -> Optional[list[dict]]:
         return None
 
 
-def x_login_via_browser(timeout_seconds: int = 180) -> str:
+def has_saved_x_session() -> bool:
+    """Return True if a saved X browser session exists and is non-empty."""
+    cookies = load_browser_cookies()
+    return bool(cookies)
+
+
+def clear_x_session() -> None:
+    """Delete any saved X session cookies."""
+    path = get_cookie_path()
+    if path.exists():
+        path.unlink()
+    jar_path = path.with_suffix(".jar.json")
+    if jar_path.exists():
+        jar_path.unlink()
+
+
+async def x_login_via_browser(timeout_seconds: int = 180) -> str:
     """Open a visible browser for X login and save session cookies.
 
     The user completes login manually in the opened Chromium window
@@ -82,7 +101,7 @@ def x_login_via_browser(timeout_seconds: int = 180) -> str:
         Human-readable success or error message.
     """
     try:
-        from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+        from playwright.async_api import async_playwright, TimeoutError as PWTimeout
     except ImportError:
         return (
             "Playwright not installed.\n"
@@ -94,10 +113,10 @@ def x_login_via_browser(timeout_seconds: int = 180) -> str:
 
     cookie_path = get_cookie_path()
 
-    with sync_playwright() as p:
+    async with async_playwright() as p:
         # Visible browser so the user can interact naturally
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context(
+        browser = await p.chromium.launch(headless=False)
+        context = await browser.new_context(
             viewport={"width": 1280, "height": 800},
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -105,10 +124,10 @@ def x_login_via_browser(timeout_seconds: int = 180) -> str:
                 "Chrome/120.0.0.0 Safari/537.36"
             ),
         )
-        page = context.new_page()
+        page = await context.new_page()
 
         try:
-            page.goto(
+            await page.goto(
                 "https://x.com/i/flow/login",
                 wait_until="domcontentloaded",
                 timeout=30000,
@@ -137,12 +156,12 @@ def x_login_via_browser(timeout_seconds: int = 180) -> str:
                     or ("x.com/" in lowered and "/i/flow/login" not in lowered)
                 )
 
-            page.wait_for_url(is_logged_in, timeout=timeout_seconds * 1000)
+            await page.wait_for_url(is_logged_in, timeout=timeout_seconds * 1000)
 
             print("  ✅ Login detected! Capturing session cookies...\n")
 
             # Capture all cookies from the browser context
-            cookies = context.cookies()
+            cookies = await context.cookies()
 
             if not cookies:
                 return "No cookies captured — login may have failed."
@@ -184,20 +203,4 @@ def x_login_via_browser(timeout_seconds: int = 180) -> str:
         except Exception as exc:
             return f"❌ Browser login error: {exc}"
         finally:
-            browser.close()
-
-
-def has_saved_x_session() -> bool:
-    """Return True if a saved X browser session exists and is non-empty."""
-    cookies = load_browser_cookies()
-    return bool(cookies)
-
-
-def clear_x_session() -> None:
-    """Delete any saved X session cookies."""
-    path = get_cookie_path()
-    if path.exists():
-        path.unlink()
-    jar_path = path.with_suffix(".jar.json")
-    if jar_path.exists():
-        jar_path.unlink()
+            await browser.close()
