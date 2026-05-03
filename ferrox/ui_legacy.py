@@ -610,8 +610,9 @@ def print_help() -> None:
 
 [bold green]X Bot Social Commands (NEW):[/bold green]
 [cyan]/x-mode[/cyan]        Switch to X Bot Expert mode (loads X SKILL)
+[cyan]/x-login[/cyan]       Browser login to X (recommended — no password stored)
 [cyan]/social[/cyan]        Show X Bot status and available commands
-[cyan]/social login[/cyan]  Login to X (one-time credential entry)
+[cyan]/social login[/cyan]  Manual login to X with username/password
 [cyan]/social start[/cyan]  Start background X Bot daemon
 [cyan]/social stop[/cyan]   Stop X Bot daemon
 [cyan]/social panic[/cyan]  Emergency stop and logout

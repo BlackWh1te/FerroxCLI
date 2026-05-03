@@ -81,23 +81,59 @@ _read_bucket = TokenBucket(rate=1.0, burst=10)   # Read operations
 
 
 def _get_twikit_client(config: SocialConfig):
-    """Get or create twikit client with session."""
+    """Get or create twikit client with session.
+
+    Tries multiple cookie sources in order:
+    1. Config-specified cookie file
+    2. Browser-login cookie file (~/.ferrox/twikit_cookies.json)
+    3. Falls back to unauthenticated client (caller must handle login)
+    """
     try:
         from twikit import Client
-        
-        client = Client()
-        
-        # Load cookies if they exist
-        cookie_path = Path(config.credentials.cookie_file)
-        if cookie_path.exists():
-            client.load_cookies(str(cookie_path))
-        
-        return client
     except ImportError:
         raise ToolExecutionError(
             "twikit not installed. Run: pip install twikit",
             {"action": "get_client"}
         )
+
+    client = Client()
+
+    # ── Try config-specified cookie file ──
+    cookie_path = Path(config.credentials.cookie_file)
+    if cookie_path.exists():
+        try:
+            client.load_cookies(str(cookie_path))
+            return client
+        except Exception:
+            pass  # Corrupt or incompatible format — try next source
+
+    # ── Try browser-login cookie file ──
+    browser_cookie_path = Path.home() / ".ferrox" / "twikit_cookies.json"
+    if browser_cookie_path.exists():
+        try:
+            # Browser login saves in Playwright JSON format which may wrap
+            # cookies in {"cookies": [...]}; twikit may expect a flat list.
+            # We attempt direct load first, then extract if needed.
+            client.load_cookies(str(browser_cookie_path))
+            return client
+        except Exception:
+            # If twikit failed to parse, try extracting the inner list
+            try:
+                import json
+
+                with open(browser_cookie_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and "cookies" in data:
+                    # Save a temporary flat list for twikit
+                    flat_path = browser_cookie_path.with_suffix(".flat.json")
+                    with open(flat_path, "w", encoding="utf-8") as f:
+                        json.dump(data["cookies"], f)
+                    client.load_cookies(str(flat_path))
+                    return client
+            except Exception:
+                pass
+
+    return client
 
 
 def _log_tool_call(name: str, args: dict):

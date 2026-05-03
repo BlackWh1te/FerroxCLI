@@ -813,17 +813,24 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 status = get_daemon_status()
                 state = load_social_state()
 
+                from .x_browser_login import has_saved_x_session
+
+                browser_session = has_saved_x_session()
+
                 console.print("\n[bold cyan]🐦 X Bot Status[/bold cyan]")
                 console.print("───────────────────────────────────────────────")
                 console.print(f"Daemon Running: {'Yes' if status['running'] else 'No'}")
                 console.print(f"Session Valid: {'Yes' if status['session_valid'] else 'No'}")
+                console.print(
+                    f"Browser Session: {'Saved (use /x-login to refresh)' if browser_session else 'None (run /x-login)'}")
                 console.print(f"Posts Today: {status['posts_today']}")
                 console.print(f"Consecutive Failures: {status['consecutive_failures']}")
                 if status["started_at"]:
                     console.print(f"Started: {status['started_at']}")
                 console.print("───────────────────────────────────────────────")
                 console.print("\n[dim]Commands:[/dim]")
-                console.print("  /social login    - Login to X")
+                console.print("  /x-login         - Browser login (recommended - no password stored)")
+                console.print("  /social login    - Manual username/password login")
                 console.print("  /social start    - Start background daemon")
                 console.print("  /social stop     - Stop daemon")
                 console.print("  /social panic    - Emergency stop & logout")
@@ -831,28 +838,52 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 console.print("───────────────────────────────────────────────\n")
                 continue
             elif command == "/social login":
-                """Login to X."""
-                console.print("[cyan]🐦 X Bot Login[/cyan]")
+                """Manual username/password login to X."""
+                console.print("[cyan]🐦 X Bot Login (manual)[/cyan]")
                 console.print(
-                    "[yellow]Note: Credentials will be used once to create session cookies.[/yellow]"
+                    "[yellow]Note: Credentials are stored in config. "
+                    "Consider '/x-login' for password-free browser login.[/yellow]"
                 )
                 username = console.input("Username (without @): ")
                 password = console.input("Password: ", password=True)
                 email = console.input("Email (for verification): ")
 
-                from .social_config import SocialConfig, save_social_state, load_social_state
+                from .social_config import SocialConfig
 
-                config = SocialConfig()
-                config.credentials.username = username
-                config.credentials.password = password
-                config.credentials.email = email
+                social_cfg = SocialConfig()
+                social_cfg.credentials.username = username
+                social_cfg.credentials.password = password
+                social_cfg.credentials.email = email
 
-                # Store in main config
-                if not hasattr(config, "social") or config.social is None:
-                    config.social = config
+                # Attach to main config
+                if hasattr(config, "social"):
+                    config.social = social_cfg
                 save_config(config)
 
-                console.print("[green]✅ Credentials saved. Run /social start to begin.[/green]")
+                console.print(
+                    "[green]✅ Credentials saved. Run /social start to begin.[/green]"
+                )
+                continue
+            elif command == "/x-login":
+                """Browser-based X login — no password stored, only cookies."""
+                from .x_browser_login import x_login_via_browser, has_saved_x_session
+
+                if has_saved_x_session():
+                    overwrite = console.input(
+                        "A saved X session already exists. Overwrite? [y/N]: "
+                    )
+                    if overwrite.lower().strip() not in ("y", "yes"):
+                        console.print("[dim]Kept existing session. Run /social start to use it.[/dim]")
+                        continue
+
+                console.print("[cyan]🐦 X Browser Login[/cyan]")
+                console.print(
+                    "[dim]A browser window will open. Log in to X normally, then\n"
+                    "the session cookies will be saved for future use.[/dim]"
+                )
+
+                result = x_login_via_browser(timeout_seconds=180)
+                console.print(result)
                 continue
             elif command == "/social start":
                 """Start social bot daemon."""
@@ -895,7 +926,12 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 state.consecutive_failures = 0
                 save_social_state(state)
 
-                console.print("[red]✅ Panic complete. Bot stopped, session cleared.[/red]")
+                # Also clear browser-login cookies
+                from .x_browser_login import clear_x_session
+
+                clear_x_session()
+
+                console.print("[red]✅ Panic complete. Bot stopped, all sessions cleared.[/red]")
                 continue
             elif command == "/social undo":
                 """Delete last tweet."""

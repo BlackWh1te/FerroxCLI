@@ -100,8 +100,9 @@ COMMAND_META: dict = {
     "/thoughts": "show recent agent thoughts",
     # X Bot Social Commands
     "/x-mode": "switch to X Bot Expert mode",
+    "/x-login": "browser login to X (no password stored, cookies only)",
     "/social": "show X Bot status and commands",
-    "/social login": "login to X (one-time credential entry)",
+    "/social login": "manual login to X with username/password",
     "/social start": "start background X Bot daemon",
     "/social stop": "stop X Bot daemon",
     "/social panic": "emergency stop and logout",
