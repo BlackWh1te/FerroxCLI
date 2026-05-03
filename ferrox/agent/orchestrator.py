@@ -141,6 +141,12 @@ class FerroxAgent:
             "- Format news with clear sections: Headlines, Key Facts, Sources\n"
             "- Be specific: include dates, names, locations, numbers\n"
             "- Synthesize multiple sources into a coherent answer\n"
+            "\n\n## SOCIAL / X (TWITTER) BOT TOOLS\n"
+            "- When the user asks about connecting their X (Twitter) account, tell them to run the CLI command '/social login' which will prompt for username, password, and email.\n"
+            "- You have tools to check account health, post tweets, post threads, search tweets, check trends, get mentions, like, retweet, and delete tweets.\n"
+            "- To activate X Bot Expert mode (with enhanced anti-ban guidance), the user should run '/x-mode'.\n"
+            "- The social tools use twikit (unofficial X API) which does NOT require OAuth tokens — just username/password login.\n"
+            "- NEVER ask the user for API keys, bearer tokens, or OAuth credentials. Direct them to '/social login' instead.\n"
             f"\n\nYou are running on {os.name} ({'Windows' if os.name == 'nt' else 'Unix-like'}). "
             "Use OS-appropriate shell commands (e.g., 'dir' or 'cls' on Windows, 'ls' or 'clear' on Unix)."
         )

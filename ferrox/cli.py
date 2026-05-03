@@ -954,6 +954,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 format_separator,
                 reset_step_counter,
                 format_elapsed,
+                _unescape_newlines,
             )
 
             format_user_message(user_input)
@@ -1064,8 +1065,9 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 history_manager.add("user", f"[Context injected mid-response]: {btw}")
                 console.print(f'[dim]📌 Context saved for next turn: "{btw[:60]}"[/dim]')
 
-            # Strip any pydantic-ai wrapper objects from the response
+            # Strip any pydantic-ai wrapper objects and unescape newlines
             full_response = _strip_wrapper_objects(full_response)
+            full_response = _unescape_newlines(full_response)
 
             # ── Print assistant response in Devin style ──
             if full_response:
