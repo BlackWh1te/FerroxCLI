@@ -213,9 +213,9 @@ async def check_account_health_tool(ctx: RunContext) -> str:
     Returns:
         Account status including type, limits, and recommendations
     """
-    span = tracer.start_as_current_span("check_account_health") if tracer else None
-    if span:
-        span.set_attribute("tool", "check_account_health")
+    if tracer:
+        with tracer.start_as_current_span("check_account_health") as span:
+            span.set_attribute("tool", "check_account_health")
     
     _log_tool_call("check_account_health", {})
     
@@ -407,10 +407,10 @@ async def post_tweet_tool(
     Returns:
         Result of posting attempt
     """
-    span = tracer.start_as_current_span("post_tweet") if tracer else None
-    if span:
-        span.set_attribute("text_length", len(text))
-        span.set_attribute("dry_run", dry_run)
+    if tracer:
+        with tracer.start_as_current_span("post_tweet") as span:
+            span.set_attribute("text_length", len(text))
+            span.set_attribute("dry_run", dry_run)
     
     _log_tool_call("post_tweet", {"text_length": len(text), "dry_run": dry_run})
     
