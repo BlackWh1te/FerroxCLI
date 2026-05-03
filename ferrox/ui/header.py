@@ -1,7 +1,8 @@
 import os
+
 from rich.console import Console
-from rich.text import Text
 from rich.panel import Panel
+from rich.text import Text
 
 console = Console()
 
@@ -14,7 +15,7 @@ def load_ascii_art(filename: str = "tiger.txt") -> str:
     filepath = os.path.join(project_root, filename)
 
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         # Fallback minimal ASCII
@@ -40,7 +41,7 @@ def _load_header_txt() -> list[str]:
     project_root = os.path.join(base_dir, "..", "..")
     filepath = os.path.join(project_root, "header.txt")
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             return f.read().splitlines()
     except FileNotFoundError:
         return []

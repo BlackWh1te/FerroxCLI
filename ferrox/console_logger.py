@@ -1,5 +1,7 @@
-from rich.console import Console
 import logging
+
+from rich.console import Console
+
 from .logger_new import logger
 
 console = Console()

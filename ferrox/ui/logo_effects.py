@@ -1,14 +1,12 @@
 """Logo animation effects library with timing and color management."""
 
-import time
-import random
 import math
-from typing import List, Tuple, Optional, Callable, Iterator
+import random
+from typing import Callable, List, Optional, Tuple
+
 from rich.text import Text
-from rich.color import Color
 
 from .logo_config import ColorScheme
-
 
 # ── Color Palette Definitions ──────────────────────────────────────────────
 

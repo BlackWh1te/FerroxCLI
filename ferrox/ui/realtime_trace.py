@@ -1,18 +1,21 @@
 """Real-time trace viewer using Textual framework."""
 
-from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical, Container
-from textual.widgets import (
-    Header, Footer, Static, ProgressBar,
-    Log, DataTable, Tabs, Tab, ContentSwitcher,
-    Input, Button, Label
-)
-from textual.reactive import reactive
-from textual import events
-from datetime import datetime
-from ..agent.event_bus import event_bus, AgentEvent, EventType
-from ..metrics_realtime import realtime_metrics
 import asyncio
+
+from textual.app import App, ComposeResult
+from textual.containers import Container, Horizontal, Vertical
+from textual.reactive import reactive
+from textual.widgets import (
+    DataTable,
+    Footer,
+    Header,
+    Log,
+    ProgressBar,
+    Static,
+)
+
+from ..agent.event_bus import AgentEvent, EventType, event_bus
+from ..metrics_realtime import realtime_metrics
 
 
 class AgentPanel(Vertical):

@@ -1,11 +1,12 @@
 """Agent pool management for concurrent agent execution."""
 
 import asyncio
-from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Dict, List, Optional
+
+from .event_bus import AgentEvent, EventType, event_bus
 from .orchestrator import FerroxAgent
-from .event_bus import event_bus, AgentEvent, EventType
 
 
 @dataclass

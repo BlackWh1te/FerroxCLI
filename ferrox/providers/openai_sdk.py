@@ -1,8 +1,9 @@
 """OpenAI SDK integration for Ferrox"""
 
 import os
+from typing import List, Optional
+
 from openai import AsyncOpenAI
-from typing import Optional, List
 
 
 class OpenAISDKProvider:

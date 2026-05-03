@@ -1,9 +1,10 @@
 """Monitoring and error tracking with Sentry"""
 
 import os
+from typing import Optional
+
 import sentry_sdk
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
-from typing import Optional
 
 
 def init_sentry(

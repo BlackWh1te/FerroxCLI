@@ -1,28 +1,17 @@
 """Devin-style terminal UI for Ferrox"""
 
 import os
-import sys
 import platform
+import shutil
 import subprocess
 import tempfile
-from typing import Optional, Callable, List, Dict, Any
-from prompt_toolkit.application import Application
-from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.styles import Style
-from prompt_toolkit.layout.containers import HSplit, VSplit, Window, Float, HorizontalAlign
-from prompt_toolkit.layout.controls import FormattedTextControl, UIControl
-from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.widgets import TextArea, Label, MenuContainer, MenuItem
-from prompt_toolkit.filters import has_focus
-from rich.console import Console
-from rich.markdown import Markdown
-from rich.panel import Panel
-from rich.table import Table
-from rich.syntax import Syntax
-from rich.text import Text
+from typing import Callable, Dict, List, Optional
 
+from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.styles import Style
+from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
 
 console = Console()
 
@@ -269,11 +258,11 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
 
         for line in lines:
             if "[stdout]" in line or "[stderr]" in line:
-                formatted.append(("[cyan bold]" + line + "[/cyan bold]"))
+                formatted.append("[cyan bold]" + line + "[/cyan bold]")
             elif "[exit code:" in line:
                 code = line.split(":")[-1].strip().rstrip("]")
                 color = "green" if code == "0" else "red"
-                formatted.append((f"[{color} bold]" + line + f"[/{color} bold]"))
+                formatted.append(f"[{color} bold]" + line + f"[/{color} bold]")
             else:
                 formatted.append(line)
 
@@ -289,16 +278,16 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
         formatted = []
         for line in lines:
             if line.startswith("Contents of"):
-                formatted.append(("[cyan bold]" + line + "[/cyan bold]"))
+                formatted.append("[cyan bold]" + line + "[/cyan bold]")
             elif "📁" in line:
-                formatted.append(("[yellow]" + line.replace("📁", "[DIR]") + "[/yellow]"))
+                formatted.append("[yellow]" + line.replace("📁", "[DIR]") + "[/yellow]")
             elif "📄" in line:
-                formatted.append(("[white]" + line.replace("📄", "[FILE]") + "[/white]"))
+                formatted.append("[white]" + line.replace("📄", "[FILE]") + "[/white]")
             else:
                 formatted.append(line)
 
         return Panel(
-            "\n".join(formatted), title=f"[list_directory]", border_style="blue", padding=(0, 1)
+            "\n".join(formatted), title="[list_directory]", border_style="blue", padding=(0, 1)
         )
 
     elif tool_name == "read_file":
@@ -323,7 +312,7 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
             )
 
     elif tool_name == "write_file":
-        return Panel(output, title=f"[write_file]", border_style="yellow", padding=(0, 1))
+        return Panel(output, title="[write_file]", border_style="yellow", padding=(0, 1))
 
     elif tool_name == "web_search":
         lines = output.split("\n")
@@ -393,7 +382,7 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
         console.print(f"[dim]Opening {editor}...[/dim]")
         subprocess.call([editor, temp_path])
 
-        with open(temp_path, "r", encoding="utf-8") as f:
+        with open(temp_path, encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -406,16 +395,4 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
 
 
 def _command_exists(cmd: str) -> bool:
-    if platform.system() == "Windows":
-        return (
-            subprocess.call(
-                f"where {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
-            == 0
-        )
-    return (
-        subprocess.call(
-            f"which {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-        == 0
-    )
+    return shutil.which(cmd) is not None

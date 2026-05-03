@@ -1,7 +1,8 @@
+
 from pydantic_ai import Agent, RunContext
-from ..permissions import PermissionEngine, PermissionAction
+
+from ..permissions import PermissionAction, PermissionEngine
 from ..tools import execute_tool
-import os
 
 # Initialize components
 permission_engine = PermissionEngine()

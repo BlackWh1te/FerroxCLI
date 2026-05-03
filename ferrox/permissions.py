@@ -1,9 +1,10 @@
 """Permission engine with scoped allowances for Ferrox"""
 
-import os
 import json
+import os
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import List
+
 from .modes import Mode
 
 
@@ -62,12 +63,12 @@ class PermissionEngine:
     def _load_config(self):
         if os.path.exists(self.config_path):
             try:
-                with open(self.config_path, "r") as f:
+                with open(self.config_path) as f:
                     data = json.load(f)
                     rules = data.get("rules", [])
                     self.persistent_rules = [PermissionRule.from_dict(r) for r in rules]
                     self.denied_providers = set(data.get("denied_providers", []))
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 pass
 
     def _save_config(self):
@@ -78,7 +79,7 @@ class PermissionEngine:
         try:
             with open(self.config_path, "w") as f:
                 json.dump(data, f, indent=2)
-        except IOError:
+        except OSError:
             pass
 
     def is_provider_allowed(self, provider_id: str) -> bool:
@@ -93,7 +94,7 @@ class PermissionEngine:
         if os.path.exists(self.config_path):
             try:
                 os.remove(self.config_path)
-            except IOError:
+            except OSError:
                 pass
 
     def check_access(
@@ -107,6 +108,17 @@ class PermissionEngine:
         """
         abs_path = os.path.normpath(os.path.abspath(os.path.expanduser(path))).lower()
         cwd = os.path.normpath(os.path.abspath(os.getcwd())).lower()
+
+        # Check session cache first (overrides mode defaults)
+        if abs_path in self.session_denied:
+            return False
+        if abs_path in self.session_allowed:
+            return True
+
+        # Check persistent rules
+        for rule in self.persistent_rules:
+            if rule.matches(command or "", abs_path):
+                return True
 
         # Bypass mode - always allow
         if current_mode == Mode.BYPASS:
@@ -143,22 +155,25 @@ class PermissionEngine:
                 return None
             return True
 
-        # Check session cache
-        if abs_path in self.session_allowed:
-            return True
-        if abs_path in self.session_denied:
-            return False
-
-        # Check persistent rules
-        for rule in self.persistent_rules:
-            if rule.matches(command or "", abs_path):
-                return True
-
         return None
+
+    def _norm_path(self, path: str) -> str:
+        """Normalize path for consistent cache lookups"""
+        return os.path.normpath(os.path.abspath(os.path.expanduser(path))).lower()
+
+    def grant_access(self, path: str, persistent: bool = False):
+        """Grant permission for a path"""
+        abs_path = self._norm_path(path)
+        if persistent:
+            rule = PermissionRule(PermissionScope.PROJECT, path=abs_path)
+            self.persistent_rules.append(rule)
+            self._save_config()
+        else:
+            self.session_allowed.add(abs_path)
 
     def grant_once(self, path: str):
         """Grant permission for this action only"""
-        abs_path = os.path.abspath(os.path.expanduser(path))
+        abs_path = self._norm_path(path)
         self.session_allowed.add(abs_path)
 
     def grant_session_outside_project(self):
@@ -173,15 +188,17 @@ class PermissionEngine:
 
     def grant_project(self, project_path: str):
         """Grant permission for this project always"""
-        abs_path = os.path.abspath(os.path.expanduser(project_path))
+        abs_path = self._norm_path(project_path)
         rule = PermissionRule(PermissionScope.PROJECT, path=abs_path)
         self.persistent_rules.append(rule)
         self._save_config()
 
-    def deny_access(self, path: str):
-        """Deny permission for this session"""
-        abs_path = os.path.abspath(os.path.expanduser(path))
+    def deny_access(self, path: str, persistent: bool = False):
+        """Deny permission for this session or persistently"""
+        abs_path = self._norm_path(path)
         self.session_denied.add(abs_path)
+        if persistent:
+            self._save_config()
 
     def get_permission_options(
         self, path: str, command: str = None, mode: Mode = Mode.NORMAL

@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 
 class HistoryManager:
@@ -14,7 +14,7 @@ class HistoryManager:
     def _load(self):
         if os.path.exists(self.history_file):
             try:
-                with open(self.history_file, "r") as f:
+                with open(self.history_file) as f:
                     self.history = json.load(f)
             except:
                 self.history = []

@@ -1,24 +1,13 @@
 """Visual progress indicators for long-running operations."""
 
-import asyncio
-import time
-from typing import Optional, Callable, Any
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Callable, Optional
 
 from rich.console import Console
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    BarColumn,
-    TaskProgressColumn,
-    TimeRemainingColumn,
-    TimeElapsedColumn,
-)
+from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
-from rich.live import Live
 
 
 class ProgressType(Enum):

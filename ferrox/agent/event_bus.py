@@ -1,11 +1,11 @@
 """Real-time event bus for agent activities."""
 
 import asyncio
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any, Callable, Dict, List
-import json
+from typing import Any, Callable, Dict, List, Optional
 
 
 class EventType(Enum):
@@ -215,7 +215,7 @@ class AgentEventBus:
         if agent_id:
             events = [e for e in events if e.agent_id == agent_id]
 
-        counts = {event_type: 0 for event_type in EventType}
+        counts = dict.fromkeys(EventType, 0)
         for event in events:
             counts[event.event_type] += 1
 

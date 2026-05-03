@@ -1,12 +1,13 @@
 """Real-time metrics collection and reporting."""
 
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, Optional
+
 import psutil
-import time
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from typing import Dict, Optional, List
-from .agent.event_bus import event_bus, AgentEvent, EventType
+
+from .agent.event_bus import AgentEvent, EventType, event_bus
 
 
 @dataclass

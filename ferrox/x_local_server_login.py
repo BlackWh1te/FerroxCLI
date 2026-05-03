@@ -16,16 +16,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-import random
 import socket
 import threading
-from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Optional
 
-from .x_browser_login import get_cookie_path, _save_cookies_playwright_format
-
+from .x_browser_login import _save_cookies_playwright_format, get_cookie_path
 
 # ---------------------------------------------------------------------------
 # HTML page served to the user

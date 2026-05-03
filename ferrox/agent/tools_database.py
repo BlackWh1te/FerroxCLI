@@ -4,16 +4,15 @@ Provides database operations with permission checks and safety features.
 Supports SQLite, PostgreSQL, and MySQL with read-only defaults.
 """
 
-import os
-from typing import Optional, Dict, List, Any
-from pydantic_ai import RunContext
-
-from ..permissions import PermissionEngine, PermissionAction
-from ..modes import Mode
-from ..exceptions import PermissionDeniedError, ToolExecutionError
+from typing import Any, Dict
 
 # Import tracer
 from opentelemetry import trace
+from pydantic_ai import RunContext
+
+from ..modes import Mode
+from ..permissions import PermissionAction, PermissionEngine
+
 tracer = trace.get_tracer(__name__)
 
 # Import _current_agent
@@ -45,12 +44,12 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
         span.set_attribute("db_type", db_type)
         span.set_attribute("read_only", read_only)
         span.set_attribute("query", query[:100])  # Truncate for safety
-        
+
         try:
             mode = (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
-            
+
             # Check if query is write operation when read_only is True
             query_upper = query.strip().upper()
             if read_only and any(word in query_upper for word in ["INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER"]):
@@ -60,7 +59,7 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
                     _current_agent._log_tool_call("db_query", {"db_type": db_type})
                     _current_agent._log_tool_result("db_query", error_msg, False)
                 return error_msg
-            
+
             # Write operations require permission
             if not read_only and not permissions.check_access(connection_string, PermissionAction.WRITE, mode):
                 error_msg = f"Permission denied: database write operations require write access to {connection_string}"
@@ -69,10 +68,10 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
                     _current_agent._log_tool_call("db_query", {"db_type": db_type})
                     _current_agent._log_tool_result("db_query", error_msg, False)
                 return error_msg
-            
+
             if format_tool_call:
                 format_tool_call("db_query", {"db_type": db_type, "read_only": read_only})
-            
+
             # Execute query based on database type
             if db_type == "sqlite":
                 result = await _execute_sqlite(connection_string, query)
@@ -87,7 +86,7 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
                     _current_agent._log_tool_call("db_query", {"db_type": db_type})
                     _current_agent._log_tool_result("db_query", error_msg, False)
                 return error_msg
-            
+
             if result.get("error"):
                 error_msg = f"Database query failed: {result['error']}"
                 span.set_attribute("error", error_msg)
@@ -95,9 +94,9 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
                     _current_agent._log_tool_call("db_query", {"db_type": db_type})
                     _current_agent._log_tool_result("db_query", error_msg, False)
                 return error_msg
-            
+
             # Format results
-            output = f"Query executed successfully.\n"
+            output = "Query executed successfully.\n"
             if result.get("rows"):
                 output += f"Rows returned: {len(result['rows'])}\n"
                 output += f"Columns: {result.get('columns', [])}\n\n"
@@ -107,13 +106,13 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
                     output += f"  ... ({len(result['rows']) - 20} more rows)\n"
             else:
                 output += f"Rows affected: {result.get('rowcount', 0)}\n"
-            
+
             if _current_agent:
                 _current_agent._log_tool_call("db_query", {"db_type": db_type})
                 _current_agent._log_tool_result("db_query", f"Query completed, {len(result.get('rows', []))} rows", True)
-            
+
             return output
-            
+
         except Exception as e:
             error_msg = f"Error executing database query: {str(e)}"
             span.set_attribute("error", error_msg)
@@ -129,12 +128,12 @@ async def _execute_sqlite(db_path: str, query: str) -> Dict[str, Any]:
         import sqlite3
     except ImportError:
         return {"error": "sqlite3 not available"}
-    
+
     try:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute(query)
-        
+
         if query.strip().upper().startswith("SELECT"):
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
@@ -155,12 +154,12 @@ async def _execute_postgresql(connection_string: str, query: str) -> Dict[str, A
         import psycopg2
     except ImportError:
         return {"error": "psycopg2 not installed. Run: pip install psycopg2-binary"}
-    
+
     try:
         conn = psycopg2.connect(connection_string)
         cursor = conn.cursor()
         cursor.execute(query)
-        
+
         if query.strip().upper().startswith("SELECT"):
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
@@ -181,12 +180,12 @@ async def _execute_mysql(connection_string: str, query: str) -> Dict[str, Any]:
         import mysql.connector
     except ImportError:
         return {"error": "mysql-connector-python not installed. Run: pip install mysql-connector-python"}
-    
+
     try:
         conn = mysql.connector.connect(**_parse_mysql_connection_string(connection_string))
         cursor = conn.cursor()
         cursor.execute(query)
-        
+
         if query.strip().upper().startswith("SELECT"):
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description] if cursor.description else []
@@ -206,14 +205,14 @@ def _parse_mysql_connection_string(conn_str: str) -> Dict[str, str]:
     # Simple parsing for mysql://user:pass@host:port/database format
     if conn_str.startswith("mysql://"):
         conn_str = conn_str[8:]
-    
+
     parts = conn_str.split("/")
     if len(parts) < 2:
         return {}
-    
+
     database = parts[-1]
     host_part = parts[0]
-    
+
     auth_host = host_part.split("@")
     if len(auth_host) == 2:
         auth = auth_host[0]
@@ -225,11 +224,11 @@ def _parse_mysql_connection_string(conn_str: str) -> Dict[str, str]:
         user = ""
         password = ""
         host = auth_host[0]
-    
+
     host_port = host.split(":")
     host = host_port[0]
     port = int(host_port[1]) if len(host_port) > 1 else 3306
-    
+
     return {
         "user": user,
         "password": password,
@@ -243,16 +242,16 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
     """Get database schema information (tables, columns, indexes)."""
     with tracer.start_as_current_span("db_schema_tool") as span:
         span.set_attribute("db_type", db_type)
-        
+
         try:
             mode = (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
-            
+
             # Schema query is read-only, always allowed
             if format_tool_call:
                 format_tool_call("db_schema", {"db_type": db_type})
-            
+
             # Get schema based on database type
             if db_type == "sqlite":
                 query = "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name"
@@ -280,7 +279,7 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
                     _current_agent._log_tool_call("db_schema", {"db_type": db_type})
                     _current_agent._log_tool_result("db_schema", error_msg, False)
                 return error_msg
-            
+
             if result.get("error"):
                 error_msg = f"Failed to get schema: {result['error']}"
                 span.set_attribute("error", error_msg)
@@ -288,7 +287,7 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
                     _current_agent._log_tool_call("db_schema", {"db_type": db_type})
                     _current_agent._log_tool_result("db_schema", error_msg, False)
                 return error_msg
-            
+
             # Format schema output
             output = f"Database Schema ({db_type}):\n\n"
             if result.get("rows"):
@@ -311,13 +310,13 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
                 output += "\n"
             else:
                 output += "No tables found.\n"
-            
+
             if _current_agent:
                 _current_agent._log_tool_call("db_schema", {"db_type": db_type})
                 _current_agent._log_tool_result("db_schema", f"Retrieved schema for {len(result.get('rows', []))} items", True)
-            
+
             return output
-            
+
         except Exception as e:
             error_msg = f"Error getting database schema: {str(e)}"
             span.set_attribute("error", error_msg)
@@ -339,12 +338,12 @@ async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str,
     with tracer.start_as_current_span("db_migrate_tool") as span:
         span.set_attribute("db_type", db_type)
         span.set_attribute("dry_run", dry_run)
-        
+
         try:
             mode = (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
-            
+
             # Migration is a write operation, check permissions
             if not permissions.check_access(connection_string, PermissionAction.WRITE, mode):
                 error_msg = f"Permission denied: database migration requires write access to {connection_string}"
@@ -353,10 +352,10 @@ async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str,
                     _current_agent._log_tool_call("db_migrate", {"db_type": db_type})
                     _current_agent._log_tool_result("db_migrate", error_msg, False)
                 return error_msg
-            
+
             if format_tool_call:
                 format_tool_call("db_migrate", {"db_type": db_type, "dry_run": dry_run})
-            
+
             if dry_run:
                 output = f"DRY RUN - Migration SQL (not executed):\n\n{migration_sql}\n\n"
                 output += "To execute this migration, set dry_run=False and ensure you have write permissions."
@@ -364,7 +363,7 @@ async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str,
                     _current_agent._log_tool_call("db_migrate", {"db_type": db_type})
                     _current_agent._log_tool_result("db_migrate", "Dry run completed", True)
                 return output
-            
+
             # Execute migration based on database type
             if db_type == "sqlite":
                 result = await _execute_sqlite(connection_string, migration_sql)
@@ -379,7 +378,7 @@ async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str,
                     _current_agent._log_tool_call("db_migrate", {"db_type": db_type})
                     _current_agent._log_tool_result("db_migrate", error_msg, False)
                 return error_msg
-            
+
             if result.get("error"):
                 error_msg = f"Migration failed: {result['error']}"
                 span.set_attribute("error", error_msg)
@@ -387,16 +386,16 @@ async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str,
                     _current_agent._log_tool_call("db_migrate", {"db_type": db_type})
                     _current_agent._log_tool_result("db_migrate", error_msg, False)
                 return error_msg
-            
-            output = f"Migration executed successfully.\n"
+
+            output = "Migration executed successfully.\n"
             output += f"Rows affected: {result.get('rowcount', 0)}\n"
-            
+
             if _current_agent:
                 _current_agent._log_tool_call("db_migrate", {"db_type": db_type})
                 _current_agent._log_tool_result("db_migrate", "Migration completed", True)
-            
+
             return output
-            
+
         except Exception as e:
             error_msg = f"Error executing migration: {str(e)}"
             span.set_attribute("error", error_msg)

@@ -2,11 +2,10 @@
 Supports specialized subagents (Researcher, Coder, Reviewer) with dynamic Ollama models
 """
 
-from pydantic import BaseModel, Field
 from typing import List, Optional
-from pydantic_ai import Agent, RunContext
-from ..tools import execute_tool
 
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent, RunContext
 
 # --- Subagent Result Models ---
 
@@ -79,11 +78,11 @@ def create_reviewer_agent(model_name: str = "openai:gpt-4o") -> Agent:
 def create_agent_with_tools(role: str, model_name: str) -> Agent:
     """Create a subagent with tools based on role."""
     from .tools_pydantic import (
-        read_file_tool,
-        write_file_tool,
-        run_command_tool,
         list_directory_tool,
+        read_file_tool,
+        run_command_tool,
         search_code_tool,
+        write_file_tool,
     )
 
     if role == "researcher":
@@ -126,8 +125,8 @@ async def delegate_task(
         model: Optional. Specific model to use (e.g., 'ollama:llama3.2')
                If None, uses default from config
     """
-    from .orchestrator import _current_agent
     from ..config import load_config
+    from .orchestrator import _current_agent
 
     # Get config for default models
     config = load_config()

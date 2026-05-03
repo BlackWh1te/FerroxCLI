@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import random
 from datetime import datetime
 from pathlib import Path
@@ -64,7 +63,7 @@ def load_browser_cookies() -> Optional[list[dict]]:
     if not path.exists():
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, dict) and "cookies" in data:
             return data["cookies"]
@@ -237,8 +236,10 @@ async def x_login_via_browser(timeout_seconds: int = 180) -> str:
     """
     try:
         from playwright.async_api import (
-            async_playwright,
             TimeoutError as PWTimeout,
+        )
+        from playwright.async_api import (
+            async_playwright,
         )
     except ImportError:
         return (

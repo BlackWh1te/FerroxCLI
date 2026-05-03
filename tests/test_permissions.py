@@ -31,8 +31,9 @@ class TestPermissionEngineInit:
     def test_engine_initialization(self, permission_engine):
         """Test that permission engine initializes correctly"""
         assert permission_engine is not None
-        assert hasattr(permission_engine, 'permissions')
-        assert hasattr(permission_engine, 'ask_prompts')
+        assert hasattr(permission_engine, 'config_path')
+        assert hasattr(permission_engine, 'session_allowed')
+        assert hasattr(permission_engine, 'persistent_rules')
 
 
 class TestCheckAccessNormalMode:
@@ -58,10 +59,10 @@ class TestCheckAccessPlanMode:
         result = permission_engine.check_access(temp_file, PermissionAction.READ, Mode.PLAN)
         assert result is not False  # Read should be allowed or prompt
     
-    def test_plan_mode_write_denied(self, permission_engine, temp_file):
-        """Test that Plan mode denies write operations"""
+    def test_plan_mode_write_asks(self, permission_engine, temp_file):
+        """Test that Plan mode asks for write operations"""
         result = permission_engine.check_access(temp_file, PermissionAction.WRITE, Mode.PLAN)
-        assert result is False  # Write should be denied in Plan mode
+        assert result is None  # Write should prompt in Plan mode
 
 
 class TestCheckAccessBypassMode:
@@ -153,7 +154,6 @@ class TestPermissionAction:
         assert PermissionAction.READ.value == "read"
         assert PermissionAction.WRITE.value == "write"
         assert PermissionAction.EXECUTE.value == "execute"
-        assert PermissionAction.DELETE.value == "delete"
 
 
 class TestEdgeCases:

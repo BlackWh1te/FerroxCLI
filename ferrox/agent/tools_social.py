@@ -4,13 +4,12 @@ Provides rate-limited, anti-ban protected access to X API via twikit library.
 All tools include built-in safety checks and logging.
 """
 
-import os
-import random
 import asyncio
 import hashlib
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Tuple
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from pydantic_ai import RunContext
 
 # Import tracer
@@ -27,26 +26,25 @@ except ImportError:
     _current_agent = None
 
 # Ferrox imports
+from ..exceptions import ToolExecutionError
 from ..social_config import (
     SocialConfig,
-    SocialState,
+    get_rate_limits_for_account_type,
     load_social_state,
     save_social_state,
-    get_rate_limits_for_account_type,
 )
 from ..utils.content_safety import (
-    sanitize_content,
-    moderation_check,
-    validate_tweet_length,
     check_duplicate_content,
-    is_safe_domain,
+    moderation_check,
+    sanitize_content,
+    validate_tweet_length,
 )
-from ..exceptions import ToolExecutionError
+
 
 # Token bucket rate limiter for twikit calls
 class TokenBucket:
     """Token bucket rate limiter for API calls."""
-    
+
     def __init__(self, rate: float, burst: int):
         """Initialize bucket.
         
@@ -58,14 +56,14 @@ class TokenBucket:
         self.burst = burst
         self.tokens = burst
         self.last_update = datetime.now()
-    
+
     async def acquire(self):
         """Acquire a token, waiting if necessary."""
         now = datetime.now()
         elapsed = (now - self.last_update).total_seconds()
         self.tokens = min(self.burst, self.tokens + elapsed * self.rate)
         self.last_update = now
-        
+
         if self.tokens < 1:
             wait_time = (1 - self.tokens) / self.rate
             await asyncio.sleep(wait_time)
@@ -113,7 +111,7 @@ def _get_twikit_client(config: SocialConfig):
         try:
             import json
 
-            with open(browser_cookie_path, "r", encoding="utf-8") as f:
+            with open(browser_cookie_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Twikit accepts both JSON list (load_cookies) and dict (set_cookies).
@@ -153,7 +151,7 @@ def validate_x_session() -> Optional[Dict[str, Any]]:
 
     try:
         import json
-        with open(cookie_path, "r", encoding="utf-8") as f:
+        with open(cookie_path, encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
         return None
@@ -216,15 +214,14 @@ async def check_account_health_tool(ctx: RunContext) -> str:
     if tracer:
         with tracer.start_as_current_span("check_account_health") as span:
             span.set_attribute("tool", "check_account_health")
-    
+
     _log_tool_call("check_account_health", {})
-    
+
     try:
         state = load_social_state()
-        
+
         # Get config
         if hasattr(ctx, "deps") and hasattr(ctx.deps, "config"):
-            from ..config import FerroxConfig
             main_config = ctx.deps.config
             if hasattr(main_config, "social") and main_config.social:
                 config = main_config.social
@@ -232,19 +229,19 @@ async def check_account_health_tool(ctx: RunContext) -> str:
                 config = SocialConfig()
         else:
             config = SocialConfig()
-        
+
         # Get twikit client and verify session
         client = _get_twikit_client(config)
-        
+
         try:
             # Try to get user info to verify session
             user = client.user()
-            
+
             # Calculate account metrics
             created_at = getattr(user, "created_at", None)
             followers_count = getattr(user, "followers_count", 0)
             statuses_count = getattr(user, "statuses_count", 0)
-            
+
             # Determine account type
             account_type = "new"
             if created_at:
@@ -255,10 +252,10 @@ async def check_account_health_tool(ctx: RunContext) -> str:
                     account_type = "established"
                 elif account_age_days > 30 and statuses_count > 100:
                     account_type = "warming"
-            
+
             # Get appropriate limits
             limits = get_rate_limits_for_account_type(account_type)
-            
+
             # Reset daily counters if needed
             today = datetime.now().date()
             if state.last_reset_date != today:
@@ -269,7 +266,7 @@ async def check_account_health_tool(ctx: RunContext) -> str:
                 state.searches_today = 0
                 state.last_reset_date = today
                 save_social_state(state)
-            
+
             # Build status report
             output = f"""Account Health Check Results:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -303,14 +300,14 @@ Recommendations:
                 output += "  - Daemon allowed with 6h intervals\n"
             else:
                 output += f"  {account_type.upper()}: Standard limits apply\n"
-            
+
             state.session_valid = True
             state.last_login = datetime.now()
             save_social_state(state)
-            
+
             _log_tool_result("check_account_health", f"Account type: {account_type}", True)
             return output
-            
+
         except Exception as e:
             state.session_valid = False
             save_social_state(state)
@@ -324,7 +321,7 @@ Recommendations:
                     f"Details: {err_msg[:120]}"
                 )
             return f"Session invalid. Please run /social login first.\nError: {e}"
-    
+
     except Exception as e:
         _log_tool_result("check_account_health", str(e), False)
         return f"Error checking account health: {e}"
@@ -350,35 +347,35 @@ async def search_tweets_tool(
         with tracer.start_as_current_span("search_tweets") as span:
             span.set_attribute("query", query)
             span.set_attribute("max_results", max_results)
-    
+
     _log_tool_call("search_tweets", {"query": query, "max_results": max_results})
-    
+
     # Rate limit check
     await _search_bucket.acquire()
-    
+
     # Update state
     state = load_social_state()
     state.searches_today += 1
     save_social_state(state)
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         tweets = client.search_tweet(query, search_type, count=min(max_results, 50))
-        
+
         output = f"Search results for '{query}' ({search_type}):\n"
         output += "=" * 60 + "\n\n"
-        
+
         for i, tweet in enumerate(tweets, 1):
             output += f"{i}. @{tweet.user.name}\n"
             output += f"   {tweet.text[:200]}...\n" if len(tweet.text) > 200 else f"   {tweet.text}\n"
             output += f"   Likes: {tweet.favorite_count} | RTs: {tweet.retweet_count}\n"
             output += f"   ID: {tweet.id}\n\n"
-        
+
         _log_tool_result("search_tweets", f"Found {len(tweets)} tweets", True)
         return output
-        
+
     except Exception as e:
         _log_tool_result("search_tweets", str(e), False)
         err_msg = str(e)
@@ -411,41 +408,41 @@ async def post_tweet_tool(
         with tracer.start_as_current_span("post_tweet") as span:
             span.set_attribute("text_length", len(text))
             span.set_attribute("dry_run", dry_run)
-    
+
     _log_tool_call("post_tweet", {"text_length": len(text), "dry_run": dry_run})
-    
+
     try:
         config = SocialConfig()
         state = load_social_state()
-        
+
         # Get limits
         limits = get_rate_limits_for_account_type("new")  # Conservative default
-        
+
         # Check daily limit
         if state.posts_today >= limits.max_posts_per_day:
             msg = f"CRITICAL: Daily post limit reached ({limits.max_posts_per_day}). Refusing to post."
             _log_tool_result("post_tweet", msg, False)
             return msg
-        
+
         # Sanitize content
         sanitized, warnings = sanitize_content(text)
         if warnings:
             _log_tool_result("post_tweet", f"Content blocked: {warnings[0]}", False)
             return f"Content blocked: {warnings[0]}"
-        
+
         # Moderation check
         is_safe, violations = moderation_check(sanitized)
         if not is_safe:
             violations_str = "; ".join(violations)
             _log_tool_result("post_tweet", f"Moderation failed: {violations_str}", False)
             return f"MODERATION FAILED:\n{violations_str}\n\nPlease revise content."
-        
+
         # Validate length
         is_valid, effective_len, length_msg = validate_tweet_length(sanitized)
         if not is_valid:
             _log_tool_result("post_tweet", length_msg, False)
             return f"TWEET TOO LONG: {length_msg}\n\nConsider using post_thread_tool for longer content."
-        
+
         # Check duplicates
         recent_texts = [p.get("text", "") for p in state.recent_post_hashes[-20:]]
         is_dup, similarity, closest = check_duplicate_content(sanitized, recent_texts)
@@ -453,61 +450,61 @@ async def post_tweet_tool(
             msg = f"DUPLICATE DETECTED ({similarity:.0%} similar to previous post). Refusing."
             _log_tool_result("post_tweet", msg, False)
             return f"{msg}\n\nPrevious: {closest}"
-        
+
         # Draft mode check
         if config.content.draft_mode and not dry_run:
-            output = f"DRAFT MODE - Tweet ready for approval:\n"
+            output = "DRAFT MODE - Tweet ready for approval:\n"
             output += f"Content: {sanitized}\n"
             output += f"Length: {effective_len}/280 chars\n"
-            output += f"Safe: Yes\n"
+            output += "Safe: Yes\n"
             output += "\nType 'APPROVE' to post, or revise and try again."
             _log_tool_result("post_tweet", "Draft presented for approval", True)
             return output
-        
+
         if dry_run:
-            output = f"DRY RUN - Tweet would be posted:\n"
+            output = "DRY RUN - Tweet would be posted:\n"
             output += f"Content: {sanitized}\n"
             output += f"Length: {effective_len}/280 chars\n"
             output += "\nUse dry_run=False to actually post."
             _log_tool_result("post_tweet", "Dry run preview", True)
             return output
-        
+
         # Rate limit
         await _tweet_bucket.acquire()
-        
+
         # Post tweet
         client = _get_twikit_client(config)
-        
+
         if reply_to_id:
             tweet = client.create_tweet(sanitized, reply_to=reply_to_id)
         else:
             tweet = client.create_tweet(sanitized)
-        
+
         # Update state
         state.posts_today += 1
         state.recent_tweets.append({
             "id": tweet.id,
             "text": sanitized[:100],
-            "hash": hashlib.md5(sanitized.lower().encode()).hexdigest()[:16],
+            "hash": hashlib.md5(sanitized.lower().encode(), usedforsecurity=False).hexdigest()[:16],
             "posted_at": datetime.now().isoformat(),
         })
         state.consecutive_failures = 0
         save_social_state(state)
-        
-        output = f"✅ Tweet posted successfully!\n"
+
+        output = "✅ Tweet posted successfully!\n"
         output += f"Tweet ID: {tweet.id}\n"
         output += f"URL: https://x.com/i/web/status/{tweet.id}"
-        
+
         _log_tool_result("post_tweet", f"Tweet {tweet.id} posted", True)
         return output
-        
+
     except Exception as e:
         # Update failure tracking
         state = load_social_state()
         state.consecutive_failures += 1
         state.last_failure = datetime.now()
         save_social_state(state)
-        
+
         _log_tool_result("post_tweet", str(e), False)
         err_msg = str(e)
         if "KEY_BYTE" in err_msg or "indices" in err_msg or "ClientTransaction" in err_msg:
@@ -529,56 +526,56 @@ async def post_thread_tool(ctx: RunContext, texts: List[str]) -> str:
         Result of posting attempt
     """
     _log_tool_call("post_thread", {"tweet_count": len(texts)})
-    
+
     if len(texts) > 10:
         return "Thread too long (max 10 tweets). Consider breaking into multiple threads."
-    
+
     try:
         config = SocialConfig()
         state = load_social_state()
         limits = get_rate_limits_for_account_type("new")
-        
+
         # Check if we have enough quota
         if state.posts_today + len(texts) > limits.max_posts_per_day:
             return f"Not enough daily quota for {len(texts)} tweets. Have {limits.max_posts_per_day - state.posts_today}, need {len(texts)}."
-        
+
         client = _get_twikit_client(config)
-        
+
         tweets = []
         prev_id = None
-        
+
         for i, text in enumerate(texts, 1):
             # Moderation check
             is_safe, violations = moderation_check(text)
             if not is_safe:
                 return f"Moderation failed on tweet {i}: {'; '.join(violations)}"
-            
+
             # Rate limit
             await _tweet_bucket.acquire()
-            
+
             # Post
             if prev_id:
                 tweet = client.create_tweet(text, reply_to=prev_id)
             else:
                 tweet = client.create_tweet(text)
-            
+
             tweets.append(tweet)
             prev_id = tweet.id
-            
+
             # Small delay between tweets
             if i < len(texts):
                 await asyncio.sleep(2)
-        
+
         # Update state
         state.posts_today += len(tweets)
         save_social_state(state)
-        
+
         output = f"✅ Thread posted! {len(tweets)} tweets\n"
         output += f"First tweet: https://x.com/i/web/status/{tweets[0].id}"
-        
+
         _log_tool_result("post_thread", f"Thread with {len(tweets)} tweets posted", True)
         return output
-        
+
     except Exception as e:
         _log_tool_result("post_thread", str(e), False)
         err_msg = str(e)
@@ -601,24 +598,24 @@ async def get_recent_posts_tool(ctx: RunContext, count: int = 20) -> str:
         List of recent tweets
     """
     _log_tool_call("get_recent_posts", {"count": count})
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         user = client.user()
         tweets = client.get_user_tweets(user.id, count=min(count, 50))
-        
+
         output = f"Recent posts from @{user.screen_name}:\n"
         output += "=" * 60 + "\n\n"
-        
+
         for i, tweet in enumerate(tweets, 1):
             output += f"{i}. {tweet.text[:150]}...\n" if len(tweet.text) > 150 else f"{i}. {tweet.text}\n"
             output += f"   Likes: {tweet.favorite_count} | ID: {tweet.id}\n\n"
-        
+
         _log_tool_result("get_recent_posts", f"Retrieved {len(tweets)} tweets", True)
         return output
-        
+
     except Exception as e:
         _log_tool_result("get_recent_posts", str(e), False)
         err_msg = str(e)
@@ -641,14 +638,14 @@ async def check_visibility_tool(ctx: RunContext, tweet_id: str) -> str:
         Visibility check result
     """
     _log_tool_call("check_visibility", {"tweet_id": tweet_id})
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         # Wait a bit for indexing
         await asyncio.sleep(5)
-        
+
         # Try to retrieve the tweet
         try:
             tweet = client.get_tweet_by_id(tweet_id)
@@ -657,12 +654,12 @@ async def check_visibility_tool(ctx: RunContext, tweet_id: str) -> str:
                 return f"✅ Tweet {tweet_id} is visible and indexed."
         except:
             pass
-        
+
         # If not found directly, search for text
         # (This is a heuristic - shadowbanned tweets often don't appear in search)
         _log_tool_result("check_visibility", "Tweet not visible - possible shadowban", False)
         return f"⚠️ Tweet {tweet_id} not found in search. Possible shadowban detected."
-        
+
     except Exception as e:
         _log_tool_result("check_visibility", str(e), False)
         return f"Error checking visibility: {e}"
@@ -675,25 +672,25 @@ async def get_trends_tool(ctx: RunContext) -> str:
         List of trending topics
     """
     _log_tool_call("get_trends", {})
-    
+
     await _read_bucket.acquire()
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         # Get trends (usually requires a location ID, using 1 for worldwide)
         trends = client.get_trends(1)
-        
+
         output = "Current Trends (Worldwide):\n"
         output += "=" * 60 + "\n\n"
-        
+
         for i, trend in enumerate(trends[:20], 1):
             output += f"{i}. #{trend.name} - {trend.tweet_volume or 'N/A'} tweets\n"
-        
+
         _log_tool_result("get_trends", f"Retrieved {len(trends)} trends", True)
         return output
-        
+
     except Exception as e:
         _log_tool_result("get_trends", str(e), False)
         return f"Error getting trends: {e}"
@@ -709,26 +706,26 @@ async def get_mentions_tool(ctx: RunContext, count: int = 20) -> str:
         List of mentions
     """
     _log_tool_call("get_mentions", {"count": count})
-    
+
     await _read_bucket.acquire()
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         # Get mentions timeline
         mentions = client.get_mentions(count=min(count, 50))
-        
+
         output = "Recent Mentions:\n"
         output += "=" * 60 + "\n\n"
-        
+
         for i, tweet in enumerate(mentions, 1):
             output += f"{i}. @{tweet.user.name}: {tweet.text[:100]}...\n"
             output += f"   ID: {tweet.id}\n\n"
-        
+
         _log_tool_result("get_mentions", f"Retrieved {len(mentions)} mentions", True)
         return output
-        
+
     except Exception as e:
         _log_tool_result("get_mentions", str(e), False)
         return f"Error getting mentions: {e}"
@@ -744,28 +741,28 @@ async def like_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
         Result of like operation
     """
     _log_tool_call("like_tweet", {"tweet_id": tweet_id})
-    
+
     # Check limits
     state = load_social_state()
     limits = get_rate_limits_for_account_type("new")
-    
+
     if state.likes_today >= limits.max_likes_per_day:
         return f"Daily like limit reached ({limits.max_likes_per_day})."
-    
+
     await _read_bucket.acquire()
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         client.like_tweet(tweet_id)
-        
+
         state.likes_today += 1
         save_social_state(state)
-        
+
         _log_tool_result("like_tweet", f"Liked {tweet_id}", True)
         return f"✅ Liked tweet {tweet_id}"
-        
+
     except Exception as e:
         _log_tool_result("like_tweet", str(e), False)
         return f"Error liking tweet: {e}"
@@ -781,28 +778,28 @@ async def retweet_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
         Result of retweet operation
     """
     _log_tool_call("retweet_tweet", {"tweet_id": tweet_id})
-    
+
     # Retweets count as posts for limits
     state = load_social_state()
     limits = get_rate_limits_for_account_type("new")
-    
+
     if state.posts_today >= limits.max_posts_per_day:
         return f"Daily post limit reached ({limits.max_posts_per_day})."
-    
+
     await _tweet_bucket.acquire()
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         client.retweet(tweet_id)
-        
+
         state.posts_today += 1  # Retweets count toward limit
         save_social_state(state)
-        
+
         _log_tool_result("retweet_tweet", f"Retweeted {tweet_id}", True)
         return f"✅ Retweeted tweet {tweet_id}"
-        
+
     except Exception as e:
         _log_tool_result("retweet_tweet", str(e), False)
         return f"Error retweeting: {e}"
@@ -818,23 +815,23 @@ async def delete_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
         Result of delete operation
     """
     _log_tool_call("delete_tweet", {"tweet_id": tweet_id})
-    
+
     await _tweet_bucket.acquire()
-    
+
     try:
         config = SocialConfig()
         client = _get_twikit_client(config)
-        
+
         client.delete_tweet(tweet_id)
-        
+
         # Remove from recent tweets
         state = load_social_state()
         state.recent_tweets = [t for t in state.recent_tweets if t.get("id") != tweet_id]
         save_social_state(state)
-        
+
         _log_tool_result("delete_tweet", f"Deleted {tweet_id}", True)
         return f"✅ Deleted tweet {tweet_id}"
-        
+
     except Exception as e:
         _log_tool_result("delete_tweet", str(e), False)
         return f"Error deleting tweet: {e}"

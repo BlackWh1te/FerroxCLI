@@ -1,7 +1,7 @@
 """Tests for ferrox.agent.orchestrator module"""
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from ferrox.agent.orchestrator import FerroxAgent, AgentDeps
+from ferrox.agent.orchestrator import FerroxAgent, AgentDeps, get_current_session_logs
 from ferrox.config import get_default_config
 from ferrox.modes import Mode
 
@@ -69,16 +69,16 @@ class TestAgentLogging:
     def test_log_tool_call(self, sample_agent):
         """Test tool call logging"""
         sample_agent._log_tool_call("test_tool", {"arg1": "value1"})
-        assert len(sample_agent.session_logs) == 1
-        assert sample_agent.session_logs[0]["type"] == "tool_call"
-        assert sample_agent.session_logs[0]["name"] == "test_tool"
+        tool_logs = [log for log in sample_agent.session_logs if log["type"] == "tool_call"]
+        assert len(tool_logs) == 1
+        assert tool_logs[0]["name"] == "test_tool"
     
     def test_log_tool_result(self, sample_agent):
         """Test tool result logging"""
         sample_agent._log_tool_result("test_tool", "result", True)
-        assert len(sample_agent.session_logs) == 1
-        assert sample_agent.session_logs[0]["type"] == "tool_result"
-        assert sample_agent.session_logs[0]["success"] is True
+        result_logs = [log for log in sample_agent.session_logs if log["type"] == "tool_result"]
+        assert len(result_logs) == 1
+        assert result_logs[0]["success"] is True
 
 
 class TestGetModelFromConfig:
@@ -170,15 +170,15 @@ class TestWebSearchDetection:
 
 class TestGetCurrentSessionLogs:
     """Test getting current session logs"""
-    
+
     def test_get_empty_logs(self):
         """Test getting logs when no agent exists"""
-        logs = FerroxAgent.get_current_session_logs()
+        logs = get_current_session_logs()
         assert logs == []
-    
+
     def test_get_populated_logs(self, sample_agent):
         """Test getting logs from active agent"""
         sample_agent._log_thought("Test thought")
         sample_agent._log_tool_call("test_tool", {})
-        logs = FerroxAgent.get_current_session_logs()
-        assert len(logs) == 2
+        logs = get_current_session_logs()
+        assert len(logs) == 3

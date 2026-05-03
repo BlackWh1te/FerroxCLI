@@ -1,8 +1,7 @@
 """Tools module for Ferrox - File system and shell tools"""
 
 import os
-import json
-from typing import Any
+import shlex
 
 
 def get_available_tools():
@@ -144,7 +143,7 @@ def execute_read_file(file_path: str, max_lines: int = None) -> dict:
         if not os.path.exists(abs_path):
             return {"error": f"File does not exist: {file_path}", "success": False}
 
-        with open(abs_path, "r", encoding="utf-8") as f:
+        with open(abs_path, encoding="utf-8") as f:
             lines = f.readlines()
 
         total_lines = len(lines)
@@ -186,7 +185,7 @@ def execute_run_command(command: str, cwd: str = None) -> dict:
             cwd = os.getcwd()
 
         result = subprocess.run(
-            command, shell=True, cwd=cwd, capture_output=True, text=True, timeout=30
+            shlex.split(command), shell=False, cwd=cwd, capture_output=True, text=True, timeout=30
         )
 
         return {
@@ -241,14 +240,14 @@ def execute_write_file_with_review(file_path: str, content: str) -> tuple:
     Execute write_file tool with diff review.
     Returns: (result_message: str, approved: bool)
     """
-    from .diff import show_diff_and_prompt, apply_file_edit
+    from .diff import apply_file_edit, show_diff_and_prompt
 
     try:
         abs_path = os.path.abspath(file_path)
 
         original_content = ""
         if os.path.exists(abs_path):
-            with open(abs_path, "r", encoding="utf-8") as f:
+            with open(abs_path, encoding="utf-8") as f:
                 original_content = f.read()
 
         accepted, edit_action = show_diff_and_prompt(original_content, content, file_path)

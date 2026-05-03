@@ -2,18 +2,18 @@ import asyncio
 import contextlib
 import os
 import shutil
-from typing import Optional, Dict, Any
+from typing import Any, Dict
+
 from prompt_toolkit import PromptSession
-from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-from prompt_toolkit.completion import Completer, Completion, WordCompleter
-from prompt_toolkit.styles import Style
-from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.shortcuts import prompt, CompleteStyle
-from prompt_toolkit.filters import vi_insert_mode, emacs_insert_mode
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.filters import emacs_insert_mode, vi_insert_mode
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.styles import Style
 from pygments.lexers.shell import BashLexer
 from rich.console import Console
 

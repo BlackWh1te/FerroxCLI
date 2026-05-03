@@ -1,5 +1,6 @@
+from typing import Dict, List
+
 import tiktoken
-from typing import List, Dict
 
 
 def count_tokens(messages: List[Dict[str, str]], model: str = "gpt-4o") -> int:

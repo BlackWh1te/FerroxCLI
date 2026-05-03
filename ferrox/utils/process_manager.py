@@ -2,10 +2,11 @@
 
 import asyncio
 import os
-from typing import Dict, Optional, List
+import shlex
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
 
 
 @dataclass
@@ -32,7 +33,7 @@ class ProcessManager:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(ProcessManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.jobs = {}
         return cls._instance
 
@@ -41,12 +42,12 @@ class ProcessManager:
         log_dir = Path.home() / ".ferrox" / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
 
-        proc = await asyncio.create_subprocess_shell(
-            command,
+        cmd_parts = shlex.split(command)
+        proc = await asyncio.create_subprocess_exec(
+            *cmd_parts,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=cwd,
-            shell=True,
         )
 
         log_file = str(log_dir / f"job_{proc.pid}.log")
@@ -180,7 +181,7 @@ class ProcessManager:
             return "Log file not found"
 
         try:
-            with open(job.log_file, "r") as f:
+            with open(job.log_file) as f:
                 all_lines = f.readlines()
                 return "".join(all_lines[-lines:])
         except Exception as e:

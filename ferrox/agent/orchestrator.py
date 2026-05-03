@@ -1,20 +1,21 @@
-from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.ollama import OllamaModel
+import os
+from dataclasses import dataclass
+from datetime import datetime
+
+from pydantic_ai import Agent
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
     ModelResponse,
-    UserPromptPart,
-    TextPart,
     SystemPromptPart,
+    TextPart,
+    UserPromptPart,
 )
-from datetime import datetime
-import os
-from typing import Optional
-from dataclasses import dataclass
-from ..exceptions import AgentError, ProviderError, NetworkError, TimeoutError, ModelNotFoundError
+from pydantic_ai.models.ollama import OllamaModel
+
+from ..exceptions import AgentError, ModelNotFoundError, NetworkError, ProviderError, TimeoutError
 from ..modes import Mode
-from .event_bus import event_bus, AgentEvent, EventType
+from .event_bus import AgentEvent, EventType, event_bus
 
 
 @dataclass
@@ -26,7 +27,6 @@ class AgentDeps:
 # OpenTelemetry tracing imports
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor, ConsoleSpanExporter
 
 # Initialize tracer (setup provider, but skip console exporter for clean UI)
 trace.set_tracer_provider(TracerProvider())
@@ -36,68 +36,72 @@ tracer = trace.get_tracer(__name__)
 
 _current_agent = None
 
-from .tools_pydantic import (
-    read_file_tool,
-    write_file_tool,
-    run_command_tool,
-    list_directory_tool,
-    search_code_tool,
-    run_background_tool,
-    list_jobs_tool,
-    kill_job_tool,
-    get_job_logs_tool,
-)
+from ..config import FerroxConfig
+from ..skills.manager import SkillManager
 from .subagents import delegate_task
-from .tools_browser import browse_url_tool, click_element_tool, screenshot_tool, extract_text_tool
-from .tools_pydantic import (
-    pip_install_tool,
-    npm_install_tool,
-    cargo_install_tool,
-    brew_install_tool,
-    go_install_tool,
-    fetch_url_tool,
-    webfetch_tool,
-    web_search_tool,
-    extract_article_content,
-    verify_response_quality,
+from .tools_api import (
+    api_diff_tool,
+    api_history_tool,
+    api_mock_tool,
+    api_test_tool,
+    openapi_parse_tool,
 )
-from .tools_git import (
-    git_status_tool,
-    git_diff_tool,
-    git_commit_tool,
-    git_branch_tool,
-    git_checkout_tool,
-    git_log_tool,
-    git_stash_tool,
-    git_blame_tool,
-)
+from .tools_browser import browse_url_tool, click_element_tool, extract_text_tool, screenshot_tool
 from .tools_database import (
+    db_migrate_tool,
     db_query_tool,
     db_schema_tool,
-    db_migrate_tool,
 )
-from .tools_api import (
-    api_test_tool,
-    api_mock_tool,
-    openapi_parse_tool,
-    api_history_tool,
-    api_diff_tool,
+from .tools_git import (
+    git_blame_tool,
+    git_branch_tool,
+    git_checkout_tool,
+    git_commit_tool,
+    git_diff_tool,
+    git_log_tool,
+    git_stash_tool,
+    git_status_tool,
+)
+from .tools_pydantic import (
+    brew_install_tool,
+    cargo_install_tool,
+    extract_article_content,
+    fetch_url_tool,
+    get_job_logs_tool,
+    go_install_tool,
+    kill_job_tool,
+    list_directory_tool,
+    list_jobs_tool,
+    npm_install_tool,
+    pip_install_tool,
+    read_file_tool,
+    run_background_tool,
+    run_command_tool,
+    search_code_tool,
+    verify_response_quality,
+    web_search_tool,
+    webfetch_tool,
+    write_file_tool,
 )
 from .tools_social import (
     check_account_health_tool,
-    search_tweets_tool,
-    post_tweet_tool,
-    post_thread_tool,
-    get_recent_posts_tool,
     check_visibility_tool,
-    get_trends_tool,
-    get_mentions_tool,
-    like_tweet_tool,
-    retweet_tweet_tool,
     delete_tweet_tool,
+    get_mentions_tool,
+    get_recent_posts_tool,
+    get_trends_tool,
+    like_tweet_tool,
+    post_thread_tool,
+    post_tweet_tool,
+    retweet_tweet_tool,
+    search_tweets_tool,
 )
-from ..config import FerroxConfig
-from ..skills.manager import SkillManager, get_skill_content
+
+# MCP (Model Context Protocol) integration — browser automation, fetch, etc.
+try:
+    from pydantic_ai.mcp import MCPServerStdio
+except Exception:
+    MCPServerStdio = None
 
 
 class FerroxAgent:
@@ -173,6 +177,16 @@ class FerroxAgent:
             "You should proactively offer to use X tools when relevant.\n"
             f"\n\nYou are running on {os.name} ({'Windows' if os.name == 'nt' else 'Unix-like'}). "
             "Use OS-appropriate shell commands (e.g., 'dir' or 'cls' on Windows, 'ls' or 'clear' on Unix)."
+            "\n\n## MCP (BROWSER / WEB) TOOLS\n"
+            "If configured, you have access to external MCP servers for browser automation and web fetching.\n"
+            "These tools appear automatically when MCP servers are enabled in ~/.ferrox/config.json.\n"
+            "Common MCP tools include:\n"
+            "- browser_navigate, browser_click, browser_type, browser_scroll — for real browser interaction\n"
+            "- browser_screenshot — capture page state\n"
+            "- browser_evaluate — run JavaScript in the page\n"
+            "- fetch — pull any URL and get clean markdown content\n"
+            "Use these when the user asks to 'open a browser', 'check a website', 'screenshot', or 'scrape'.\n"
+            "MCP browser tools are ideal for content discovery (news, blogs, docs) to synthesize into tweets or posts."
         )
 
         # Inject skill content if active
@@ -180,9 +194,11 @@ class FerroxAgent:
         if skill_prompt:
             base_prompt += skill_prompt
 
+        mcp_toolsets = self._build_mcp_toolsets()
         self._agent = Agent(
             model=model,
             system_prompt=base_prompt,
+            toolsets=mcp_toolsets,
         )
         self._agent.tool(read_file_tool)
         self._agent.tool(write_file_tool)
@@ -237,6 +253,44 @@ class FerroxAgent:
         self._agent.tool(retweet_tweet_tool)
         self._agent.tool(delete_tweet_tool)
 
+    def _build_mcp_toolsets(self):
+        """Build MCPServerStdio instances from FerroxConfig.
+
+        Returns a list of pydantic-ai toolsets that auto-manage MCP server lifecycle.
+        On Windows/MINGW we resolve the full executable path to avoid PATH issues.
+        """
+        if not MCPServerStdio or not self.config.mcp_servers:
+            return []
+
+        toolsets = []
+        import shutil
+
+        for srv in self.config.mcp_servers:
+            if not srv.enabled:
+                continue
+
+            cmd = srv.command
+            # On Windows, try to resolve full path for npx/node common commands
+            if os.name == "nt" and not os.path.isabs(cmd):
+                resolved = shutil.which(cmd)
+                if resolved:
+                    cmd = resolved
+
+            try:
+                ts = MCPServerStdio(
+                    command=cmd,
+                    args=srv.args,
+                    env=srv.env,
+                    timeout=srv.timeout,
+                    tool_prefix=srv.name,
+                )
+                toolsets.append(ts)
+                self._log_thought(f"[MCP] Registered server '{srv.name}': {cmd} {' '.join(srv.args)}")
+            except Exception as e:
+                self._log_thought(f"[MCP] Skipped server '{srv.name}' due to error: {e}")
+
+        return toolsets
+
     def _get_model_from_config(self, model_override=None):
         """Helper to get a pydantic-ai model object or string based on config"""
         active_provider = self.config.get_active_provider()
@@ -266,8 +320,8 @@ class FerroxAgent:
 
         # 3. Handle OpenAI-compatible (Custom) providers with base_url
         if active_provider.base_url:
-            from pydantic_ai.providers.openai import OpenAIProvider
             from pydantic_ai.models.openai import OpenAIModel
+            from pydantic_ai.providers.openai import OpenAIProvider
 
             provider = OpenAIProvider(
                 base_url=active_provider.base_url, api_key=active_provider.api_key or "no-key"
@@ -315,6 +369,7 @@ class FerroxAgent:
         # ── HIGH-CONFIDENCE explicit web commands ──
         explicit_patterns = [
             r"\bsearch\s+(?:the\s+)?(?:web|internet|online|google|duckduckgo|bing)\b",
+            r"\bsearch\s+for\s+(.+)",
             r"\b(?:google|duckduckgo|bing|wiki|wikipedia)\s+(?:for\s+)?(.+)",
             r"\b(?:look\s+up|fetch|check\s+online|find\s+online)\s+(.+)",
             r"\b(?:tell\s+me\s+about|what\s+is|who\s+is|when\s+is)\s+(.+)",
@@ -430,7 +485,7 @@ class FerroxAgent:
                                 f"{search_text}\n"
                                 f"Based on the search results above, answer the user's question:\n{user_prompt}"
                             )
-                            self._log_thought(f"Integrating search results into context for response generation")
+                            self._log_thought("Integrating search results into context for response generation")
                         else:
                             self._log_thought("No search results found - will proceed without web data")
                     except Exception as e:
@@ -472,7 +527,7 @@ class FerroxAgent:
 
             except TimeoutError as e:
                 span.set_attribute("error", f"Timeout: {e}")
-                self._log_thought(f"Error: Request timeout")
+                self._log_thought("Error: Request timeout")
                 raise TimeoutError("Agent request timed out", {"model": model_id})
 
             except Exception as e:

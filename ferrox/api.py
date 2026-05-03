@@ -1,23 +1,25 @@
 """API module for interacting with LLM providers"""
 
-import time
 import json
-import httpx
-from typing import Optional, Generator, List, Dict, Any
+import time
+from collections.abc import Generator
 from datetime import datetime
+from typing import List, Optional
+
+import httpx
+
 from .config import FerroxConfig, ProviderConfig, get_model_cache, save_model_cache
-from .tools import get_available_tools, execute_tool, TOOL_MAP
-from .logger_new import logger
-from .config import CONFIG_DIR
 from .exceptions import (
     APIError,
-    ProviderError,
     AuthenticationError,
-    RateLimitError,
     ModelNotFoundError,
     NetworkError,
+    ProviderError,
+    RateLimitError,
     TimeoutError,
 )
+from .logger_new import logger
+from .tools import execute_tool, get_available_tools
 
 
 async def validate_provider(provider: ProviderConfig) -> tuple[bool, List[str], Optional[str]]:
@@ -362,7 +364,6 @@ For normal conversation (greetings, questions, general help), respond as a helpf
 
 def detect_tool_from_message(user_message: str) -> Optional[tuple]:
     """Detect if user message requires a tool based on keywords"""
-    import os
 
     msg = user_message.lower()
     original = user_message

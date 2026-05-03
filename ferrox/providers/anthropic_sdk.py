@@ -1,8 +1,9 @@
 """Anthropic SDK integration for Ferrox"""
 
 import os
+from typing import List, Optional
+
 from anthropic import AsyncAnthropic
-from typing import Optional, List
 
 
 class AnthropicSDKProvider:

@@ -4,7 +4,9 @@ Enables AI to navigate web pages, take screenshots, and interact with local web 
 
 import os
 from typing import Optional
+
 from pydantic_ai import RunContext
+
 from ferrox.exceptions import ToolExecutionError
 
 # Import tracer with try/except to avoid circular import

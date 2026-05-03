@@ -1,11 +1,10 @@
 """Semantic search using sentence-transformers and FAISS"""
 
-from sentence_transformers import SentenceTransformer
+import json
+from typing import List, Tuple
+
 import faiss
-import numpy as np
-from typing import List, Tuple, Optional
-import pickle
-from pathlib import Path
+from sentence_transformers import SentenceTransformer
 
 
 class SemanticSearch:
@@ -94,8 +93,8 @@ class SemanticSearch:
             "dimension": self.dimension,
         }
 
-        with open(f"{file_path}.metadata", "wb") as f:
-            pickle.dump(metadata, f)
+        with open(f"{file_path}.metadata", "w", encoding="utf-8") as f:
+            json.dump(metadata, f)
 
     def load_index(self, file_path: str) -> None:
         """
@@ -108,8 +107,8 @@ class SemanticSearch:
         self.index = faiss.read_index(f"{file_path}.index")
 
         # Load metadata
-        with open(f"{file_path}.metadata", "rb") as f:
-            metadata = pickle.load(f)
+        with open(f"{file_path}.metadata", encoding="utf-8") as f:
+            metadata = json.load(f)
 
         self.documents = metadata["documents"]
         self.model_name = metadata["model_name"]

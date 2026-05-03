@@ -4,15 +4,12 @@ Handles all model/tool response formatting so the UI feels like Devin.
 """
 
 import os
-import textwrap
-from typing import Any, Dict, Optional
+
 from rich.console import Console
-from rich.text import Text
-from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.rule import Rule
-from rich.tree import Tree
+from rich.text import Text
 
 console = Console()
 
@@ -291,7 +288,8 @@ def _unescape_newlines(text: str) -> str:
 
 def _fence_bare_json(text: str) -> str:
     """If the text contains a bare JSON block not wrapped in ```, wrap it."""
-    import json, re
+    import json
+    import re
 
     def _try_fence(match: re.Match) -> str:
         block = match.group(0)

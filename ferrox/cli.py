@@ -1,7 +1,7 @@
 """Main CLI module for Ferrox"""
 
-import sys
 import os
+import sys
 
 # ── Windows console UTF-8 fix (must run before any emoji output) ──
 if os.name == "nt":
@@ -22,15 +22,16 @@ if os.name == "nt":
         pass
 
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
 
 import click
 
+from .metrics import start_metrics_server
+
 # Initialize monitoring and metrics
 from .monitoring import init_sentry
-from .metrics import start_metrics_server
 
 # Initialize Sentry for error tracking
 init_sentry()
@@ -39,61 +40,48 @@ init_sentry()
 if os.getenv("PROMETHEUS_ENABLED", "false").lower() == "true":
     start_metrics_server()
 
+from .agent.agent_pool import initialize_agent_pool
+from .agent.event_bus import EventType, event_bus
+from .agent.loop import AgentLoop
+from .agent.orchestrator import FerroxAgent
+from .api import (
+    APIError,
+    fetch_models,
+    validate_provider,
+)
 from .config import (
+    CONFIG_FILE,
+    FerroxConfig,
+    ensure_config_dir,
+    get_default_config,
     load_config,
     save_config,
     validate_config,
-    get_default_config,
-    CONFIG_FILE,
-    ensure_config_dir,
-    FerroxConfig,
-    ProviderConfig,
 )
+from .exceptions import (
+    AuthenticationError,
+    FerroxError,
+    NetworkError,
+    ProviderError,
+    RateLimitError,
+    TimeoutError,
+    ToolExecutionError,
+)
+from .fallback import FallbackEngine  # Import FallbackEngine
+from .logger import get_logger
+from .metrics_realtime import realtime_metrics
 from .modes import Mode, ModeManager
-from .permissions import PermissionEngine, PermissionAction
-from .api import (
-    fetch_models,
-    send_message,
-    send_message_with_tool_loop,
-    APIError,
-    validate_provider,
-    validate_and_update_provider,
-)
-from .logger import get_logger, log_mode_change, log_request, log_fallback
+from .permissions import PermissionAction, PermissionEngine
 from .ui_legacy import (
     console,
-    display_welcome,
     display_error,
+    display_models,
     display_success,
     display_system,
-    display_mode_change,
-    display_models,
     display_warning,
     get_user_input,
-    create_devin_style_input_layout,
-    get_devin_style,
 )
-from prompt_toolkit.application import Application
-from .console_logger import UIHandler
-from .fallback import FallbackEngine  # Import FallbackEngine
-from .indicators import StatusIndicator, status_bar
-from .agent.loop import AgentLoop
-from .agent.orchestrator import FerroxAgent
-from .agent.event_bus import event_bus, EventType
-from .agent.agent_pool import initialize_agent_pool
-from .metrics_realtime import realtime_metrics
-from .exceptions import (
-    FerroxError,
-    ConfigurationError,
-    ProviderError,
-    AuthenticationError,
-    RateLimitError,
-    ToolExecutionError,
-    NetworkError,
-    TimeoutError,
-)
-from .utils.indexer import build_project_index, find_symbol_usage
-
+from .utils.indexer import build_project_index
 
 SESSION_STATE_FILE = Path.home() / ".ferrox" / "session_state.json"
 
@@ -255,11 +243,12 @@ def list_models(config: FerroxConfig) -> bool:
 import asyncio
 import os
 import sys
-from .async_ui import create_prompt_session, get_user_input
-from .config import load_config, save_config, validate_config, FerroxConfig
-from .fallback import FallbackEngine
-from .logger_new import logger
+
 from rich.console import Console
+
+from .async_ui import create_prompt_session, get_user_input
+from .config import FerroxConfig
+from .logger_new import logger
 
 console = Console()
 
@@ -310,11 +299,10 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
         "agent_pool_enabled": agent_pool_enabled,
     }
 
-    from .utils.memory import count_tokens, summarize_history
-
-    from .utils.history import HistoryManager
-    from .modes import Mode, ModeManager
+    from .modes import ModeManager
     from .permissions import PermissionEngine
+    from .utils.history import HistoryManager
+    from .utils.memory import count_tokens, summarize_history
 
     history_manager = HistoryManager()
     mode_manager = ModeManager()
@@ -329,7 +317,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
     TOKEN_LIMIT = 32000
 
     # Initialize prompt sessions with mode-aware styling
-    from .async_ui import create_prompt_session, create_busy_session
+    from .async_ui import create_busy_session
 
     prompt_session = create_prompt_session(
         mode_manager=mode_manager, config=config, session_state=session_state
@@ -563,7 +551,6 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 open_config_editor()
                 continue
             elif command == "/model":
-                from .ui_legacy import display_models
 
                 list_models(config)
                 continue
@@ -623,7 +610,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
 
                 console.print(f"[cyan]📝 Generating plan for: {task}[/cyan]")
 
-                from .agent.planner import generate_plan, save_plan_to_file, get_current_plan
+                from .agent.planner import generate_plan, get_current_plan, save_plan_to_file
 
                 plan = await generate_plan(task)
 
@@ -640,7 +627,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 console.print(get_plan_status())
                 continue
             elif command == "/next":
-                from .agent.planner import execute_next_step, get_current_plan, complete_step
+                from .agent.planner import complete_step, execute_next_step, get_current_plan
 
                 plan = get_current_plan()
                 if not plan:
@@ -685,7 +672,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
             elif command.startswith("/step "):
                 try:
                     step_num = int(command.split(" ")[1])
-                    from .agent.planner import jump_to_step, get_current_plan
+                    from .agent.planner import get_current_plan, jump_to_step
 
                     plan = get_current_plan()
                     if not plan:
@@ -826,8 +813,8 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 continue
             elif command == "/social":
                 """Show social bot status."""
-                from .social_daemon import get_daemon_status
                 from .social_config import load_social_state
+                from .social_daemon import get_daemon_status
 
                 status = get_daemon_status()
                 state = load_social_state()
@@ -885,8 +872,8 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 continue
             elif command == "/x-login":
                 """Real-browser X login via local server — no automation, no password stored."""
-                from .x_local_server_login import x_login_via_local_server
                 from .x_browser_login import has_saved_x_session
+                from .x_local_server_login import x_login_via_local_server
 
                 if has_saved_x_session():
                     overwrite = console.input(
@@ -907,9 +894,10 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 continue
             elif command == "/social start":
                 """Validate X session, show account info, start daemon, switch to SOCIAL mode."""
+                import threading
+
                 from .agent.tools_social import validate_x_session
                 from .social_daemon import start_daemon
-                import threading
 
                 # ── Step 1: Validate session ──
                 console.print("[cyan]🐦 Validating X session...[/cyan]")
@@ -982,8 +970,8 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 continue
             elif command == "/social panic":
                 """Emergency stop and logout."""
-                from .social_daemon import stop_daemon
                 from .social_config import load_social_state, save_social_state
+                from .social_daemon import stop_daemon
 
                 console.print("[red]🚨 PANIC MODE - Stopping everything![/red]")
 
@@ -1008,8 +996,8 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 continue
             elif command == "/social undo":
                 """Delete last tweet."""
-                from .social_config import load_social_state
                 from .agent.tools_social import delete_tweet_tool
+                from .social_config import load_social_state
 
                 state = load_social_state()
                 if not state.recent_tweets:
@@ -1059,11 +1047,11 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
 
             # ── Print user message in Devin style ──
             from .ui.output import (
-                format_user_message,
-                format_separator,
-                reset_step_counter,
-                format_elapsed,
                 _unescape_newlines,
+                format_elapsed,
+                format_separator,
+                format_user_message,
+                reset_step_counter,
             )
 
             format_user_message(user_input)
@@ -1111,7 +1099,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                     full_response = (
                         str(agent_result) if agent_result else "Agent completed without output."
                     )
-                    ferrox_agent._log_thought(f"Agent completed successfully")
+                    ferrox_agent._log_thought("Agent completed successfully")
 
                 except AuthenticationError as e:
                     ferrox_agent._log_thought(f"Auth error: {e.message}")

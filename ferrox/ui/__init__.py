@@ -1,5 +1,5 @@
-from .header import render_header, render_ferrox_crew_banner
 from ..console_logger import UIHandler
+from .header import render_ferrox_crew_banner, render_header
 from .trace_viewer import show_trace_viewer
 
 # Real-time monitoring components
@@ -10,15 +10,25 @@ except ImportError:
 
 # Logo animation components
 try:
-    from .logo_config import LogoConfig, AnimationSpeed, ColorScheme, get_logo_config
-    from .logo_effects import (
-        get_palette, get_effect, random_effect, random_scheme,
-        list_effects, effect_typewriter, effect_reveal_lines,
-        effect_fade_in, effect_scan, effect_glow_pulse,
-        effect_rainbow_shift, effect_sparkle,
-    )
     from .logo_animation import (
-        animate_logo, render_static_logo, AnimationController,
+        AnimationController,
+        animate_logo,
+        render_static_logo,
+    )
+    from .logo_config import AnimationSpeed, ColorScheme, LogoConfig, get_logo_config
+    from .logo_effects import (
+        effect_fade_in,
+        effect_glow_pulse,
+        effect_rainbow_shift,
+        effect_reveal_lines,
+        effect_scan,
+        effect_sparkle,
+        effect_typewriter,
+        get_effect,
+        get_palette,
+        list_effects,
+        random_effect,
+        random_scheme,
     )
 except ImportError:
     LogoConfig = None

@@ -1,8 +1,8 @@
-import asyncio
+from rich.console import Console
+
+from ..fallback import FallbackEngine
 from ..logger_new import logger
 from ..tools import execute_tool
-from ..fallback import FallbackEngine
-from rich.console import Console
 
 console = Console()
 
@@ -64,8 +64,8 @@ class AgentLoop:
                         }
                     else:
                         last_error = test_result_str[-1000:]
-                        logger.warning(f"❌ Tests failed.")
-                        console.print(f"[yellow]⚠️ Tests failed. Auto-correcting...[/yellow]")
+                        logger.warning("❌ Tests failed.")
+                        console.print("[yellow]⚠️ Tests failed. Auto-correcting...[/yellow]")
 
                         # Add error to history for next attempt
                         chat_history.append(

@@ -1,10 +1,10 @@
 """Notification system for background jobs and events."""
 
 import asyncio
-from datetime import datetime
-from typing import List, Optional, Callable, Dict, Any
-from enum import Enum
 from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 
 class NotificationType(Enum):
@@ -167,7 +167,6 @@ class NotificationManager:
     def render_rich(self) -> None:
         """Render notifications using Rich."""
         from rich.console import Console
-        from rich.panel import Panel
         from rich.table import Table
         from rich.text import Text
 

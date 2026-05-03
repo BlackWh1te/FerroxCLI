@@ -1,26 +1,25 @@
 """UI module for terminal interface - Devin-style layout"""
 
 import os
+import platform
+import shutil
+import subprocess
 import sys
 import tempfile
-import subprocess
-import platform
-import asyncio
-from typing import Optional, Callable, List
+from typing import Callable, List, Optional
+
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.styles import Style
 from prompt_toolkit.layout.containers import HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.widgets import TextArea, Label
+from prompt_toolkit.styles import Style
+from prompt_toolkit.widgets import TextArea
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
-
 
 console = Console()
 
@@ -220,9 +219,8 @@ class FerroxUI:
         def handle_ctrl_l(event):
             """Ctrl+L: Clear screen"""
             event.app.suspend_to_background()
-            import os
-
-            os.system("cls" if os.name == "nt" else "clear")
+            sys.stdout.write("\033c")
+            sys.stdout.flush()
             event.app.resume_from_background()
 
         @kb.add("c-r")
@@ -335,7 +333,7 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
         else:
             subprocess.call([editor, temp_path])
 
-        with open(temp_path, "r", encoding="utf-8") as f:
+        with open(temp_path, encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         console.print(f"[red]Error opening editor: {e}[/red]")
@@ -388,7 +386,6 @@ def get_user_input(mode_manager, on_cycle_callback: Optional[Callable] = None) -
     """Get user input with mode-aware prompt - falls back to simple input"""
     try:
         from prompt_toolkit import PromptSession
-        from prompt_toolkit.styles import Style
 
         kb = create_keybindings(mode_manager, on_cycle_callback)
 
@@ -461,10 +458,10 @@ def display_mode_change(new_mode: str) -> None:
 def display_message(role: str, content: str) -> None:
     """Display a chat message with formatting"""
     if role == "user":
-        console.print(f"[green]You:[/green]")
+        console.print("[green]You:[/green]")
         console.print(content)
     elif role == "assistant":
-        console.print(f"[blue]AI:[/blue]")
+        console.print("[blue]AI:[/blue]")
         try:
             md = Markdown(content)
             console.print(md)
@@ -544,19 +541,7 @@ def display_models(models: list, current_model: str = "", provider_name: str = "
 
 def _command_exists(cmd: str) -> bool:
     """Check if command exists"""
-    if platform.system() == "Windows":
-        return (
-            subprocess.call(
-                f"where {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
-            == 0
-        )
-    return (
-        subprocess.call(
-            f"which {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-        == 0
-    )
+    return shutil.which(cmd) is not None
 
 
 def ask_confirmation(prompt: str) -> tuple:
@@ -575,7 +560,8 @@ def ask_confirmation(prompt: str) -> tuple:
 
 def clear_screen() -> None:
     """Clear the terminal screen"""
-    os.system("cls" if platform.system() == "Windows" else "clear")
+    sys.stdout.write("\033c")
+    sys.stdout.flush()
 
 
 def print_help() -> None:

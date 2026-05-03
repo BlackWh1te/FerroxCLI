@@ -2,11 +2,11 @@
 
 import json
 import os
-from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Literal
-from pydantic import BaseModel, Field, field_validator
+from typing import Dict, List, Optional
+
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field, field_validator
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,6 +14,17 @@ load_dotenv()
 
 from .providers.config import ProviderConfig, SubagentConfig
 from .social_config import SocialConfig
+
+
+class McpServerConfig(BaseModel):
+    """Configuration for an external MCP server"""
+
+    name: str = Field(description="Logical name for this MCP server")
+    command: str = Field(description="Executable command to start the server (e.g. 'npx')")
+    args: List[str] = Field(default_factory=list, description="Arguments passed to the command")
+    env: Optional[Dict[str, str]] = Field(default=None, description="Optional environment variables")
+    timeout: float = Field(default=30, description="Server startup timeout in seconds")
+    enabled: bool = Field(default=True, description="Whether this server is enabled")
 
 
 class FerroxConfig(BaseModel):
@@ -30,6 +41,9 @@ class FerroxConfig(BaseModel):
     )
     social: Optional[SocialConfig] = Field(
         default=None, description="X Bot social media configuration"
+    )
+    mcp_servers: List[McpServerConfig] = Field(
+        default_factory=list, description="External MCP servers (Playwright, Fetch, etc.)"
     )
 
     @field_validator("timeout")
@@ -116,7 +130,7 @@ def load_config() -> Optional[FerroxConfig]:
         return None
 
     try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
             data = json.load(f)
 
         # Handle old config format migration
@@ -175,7 +189,7 @@ def get_model_cache() -> dict:
         return {}
 
     try:
-        with open(MODEL_CACHE_FILE, "r", encoding="utf-8") as f:
+        with open(MODEL_CACHE_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}

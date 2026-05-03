@@ -73,6 +73,46 @@ Fallback path: if primary provider fails, `FallbackEngine` (`ferrox/fallback.py`
 | `ferrox/utils/memory.py` | Token counting + history compression (threshold: 32k tokens) |
 | `ferrox/utils/indexer.py` | Symbol indexer for `/index` |
 
+### MCP (Model Context Protocol) Servers
+
+Ferrox can connect to external MCP servers via pydantic-ai's native `MCPServerStdio` support (v1.89+).
+This enables browser automation, web fetching, and any third-party MCP tool without custom bridges.
+
+**How it works:**
+- MCP servers are configured in `~/.ferrox/config.json` under `mcp_servers`
+- `FerroxAgent` builds `MCPServerStdio` instances from config and passes them as `toolsets=` to `Agent()`
+- pydantic-ai auto-starts servers on `agent.run()` and stops them after — no manual lifecycle needed
+
+**Recommended servers for X/Reddit bot content pipeline:**
+- **Playwright MCP** (`npx -y @playwright/mcp@latest`) — real browser navigation, clicking, screenshots, JS evaluation
+- **Fetch MCP** (`pip install mcp-server-fetch` / `uvx mcp-server-fetch`) — pull any URL as markdown
+
+**Example config:**
+```json
+{
+  "mcp_servers": [
+    {
+      "name": "playwright",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "timeout": 30,
+      "enabled": true
+    },
+    {
+      "name": "fetch",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "timeout": 15,
+      "enabled": true
+    }
+  ]
+}
+```
+
+**Tool naming:** `tool_prefix` is set to the server `name`, so Playwright tools appear as e.g. `playwright:browser_navigate`.
+
+**Windows/MINGW note:** The bridge resolves `npx`/`uvx` via `shutil.which()` automatically. If Node.js is not in PATH, the agent logs a warning and skips the server.
+
 ### Two Tool Systems
 
 There are two parallel tool execution paths — be aware of both:
@@ -99,6 +139,7 @@ Toggle with `Shift+Tab` or `/normal`, `/plan`, `/edit`, `/bypass`.
 - Model cache: `~/.ferrox/model_cache.json` (1-hour TTL)
 - Env vars: `OLLAMA_BASE_URL`, `FERROX_TIMEOUT`, `FERROX_MAX_TOKENS`, `SENTRY_DSN`, `PROMETHEUS_PORT`
 - Supported providers: OpenAI, Anthropic, Ollama, LM-Studio, vLLM, any OpenAI-compatible endpoint
+- MCP servers: configured in `~/.ferrox/config.json` under `mcp_servers` (see MCP section above). Requires Node.js (for `npx`) or `uv`/`uvx` on the host.
 
 ### Observability (optional)
 

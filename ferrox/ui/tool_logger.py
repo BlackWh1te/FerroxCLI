@@ -1,6 +1,7 @@
+import os
+
 from rich.console import Console
 from rich.text import Text
-import os
 
 console = Console()
 

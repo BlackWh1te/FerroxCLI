@@ -1,8 +1,10 @@
-import httpx
-from typing import List
 from datetime import datetime
-from .config import ProviderConfig
+from typing import List
+
+import httpx
+
 from ..logger_new import logger
+from .config import ProviderConfig
 
 DEFAULT_MODELS = {
     "openai": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"],

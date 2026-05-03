@@ -2,22 +2,21 @@
 
 import math
 import os
-import sys
 import time
-import threading
-from typing import List, Optional, Callable
+from typing import Callable, List, Optional
+
 from rich.console import Console
 from rich.text import Text
 
-from .logo_config import LogoConfig, AnimationSpeed, get_logo_config
+from .logo_config import AnimationSpeed, LogoConfig, get_logo_config
 from .logo_effects import (
-    get_palette, split_lines, pad_lines, center_line, get_line_width,
-    effect_typewriter, effect_reveal_lines, effect_fade_in,
-    effect_scan, effect_glow_pulse, effect_rainbow_shift, effect_sparkle,
-    random_effect, random_scheme, ease_in_out,
-    PALETTES,
+    ease_in_out,
+    effect_fade_in,
+    effect_reveal_lines,
+    get_palette,
+    random_scheme,
+    split_lines,
 )
-
 
 console = Console()
 
@@ -29,7 +28,7 @@ def load_ascii_art(filename: str = "tiger.txt") -> str:
     filepath = os.path.join(project_root, filename)
 
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         return """       (Ferrox Tiger Art Missing)"""
@@ -80,7 +79,6 @@ class AnimationController:
 
     def _get_palette(self):
         """Get the color palette for animation."""
-        from .logo_config import ColorScheme
         if self.config.random_scheme:
             scheme = random_scheme()
         else:

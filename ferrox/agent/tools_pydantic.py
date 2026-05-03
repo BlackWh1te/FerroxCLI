@@ -1,20 +1,21 @@
-import os
 import asyncio
+
 from pydantic_ai import RunContext
-from ..tools import execute_read_file, execute_run_command, execute_list_directory
-from ..utils.process_manager import process_manager
-from ..permissions import PermissionEngine, PermissionAction
+
+from ..exceptions import ToolExecutionError
 from ..modes import Mode
-from ..exceptions import PermissionDeniedError, FileAccessError, ToolExecutionError
+from ..permissions import PermissionAction, PermissionEngine
+from ..tools import execute_list_directory, execute_read_file, execute_run_command
+from ..utils.process_manager import process_manager
 
 # Devin-style output formatters
 try:
     from ..ui.output import (
-        format_read_file_result,
         format_list_directory_result,
+        format_read_file_result,
         format_shell_result,
-        format_write_file_result,
         format_tool_call,
+        format_write_file_result,
     )
 except ImportError:
     format_read_file_result = None
@@ -666,10 +667,10 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
         span.set_attribute("response_length", len(response))
         if format_tool_call:
             format_tool_call("verify_response_quality", {"response_length": len(response)})
-        
+
         issues = []
         suggestions = []
-        
+
         # Check for generic descriptions
         generic_phrases = [
             "provides headlines",
@@ -680,40 +681,40 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
             "provides comprehensive",
             "stay informed"
         ]
-        
+
         for phrase in generic_phrases:
             if phrase.lower() in response.lower():
                 issues.append(f"Contains generic phrase: '{phrase}'")
                 suggestions.append("Extract actual headlines/content instead of describing the site")
-        
+
         # Check for specific information
         has_dates = any(char.isdigit() for char in response)  # Simple check for numbers/dates
         has_quotes = '"' in response or "'" in response
         has_specific_names = any(word[0].isupper() for word in response.split() if len(word) > 1)
-        
+
         if not has_dates:
             issues.append("Missing specific dates or numbers")
             suggestions.append("Include specific dates, times, or numbers")
-        
+
         if not has_quotes:
             issues.append("Missing quotes or direct content")
             suggestions.append("Include direct quotes or actual headlines")
-        
+
         if not has_specific_names:
             issues.append("Missing specific names or entities")
             suggestions.append("Include specific names of people, companies, or places")
-        
+
         # Check response length
         if len(response) < 200:
             issues.append("Response is too short")
             suggestions.append("Provide more detailed information")
-        
+
         # Check if response is just a list of URLs
         url_count = response.count("http")
         if url_count > 3 and len(response.split('\n')) < url_count + 5:
             issues.append("Response is mostly URLs without content")
             suggestions.append("Fetch and summarize actual content from URLs")
-        
+
         # Generate assessment
         if not issues:
             return "✅ Response Quality: GOOD\n\nThe response contains specific information and is not generic."
@@ -722,13 +723,13 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
             output += "Issues Found:\n"
             for issue in issues:
                 output += f"  • {issue}\n"
-            
+
             output += "\nSuggestions:\n"
             for suggestion in suggestions:
                 output += f"  • {suggestion}\n"
-            
+
             output += "\nRecommendation: Use web_search(query, fetch_content=True) to get actual content."
-            
+
             return output
 
 
@@ -748,34 +749,35 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
         try:
             # Fetch the page content
             content = await webfetch_tool(ctx, url, max_chars=10000)
-            
+
             # Try to extract structured content using readability if available
             try:
-                from readability import Document
                 import html
+
+                from readability import Document
                 doc = Document(content)
                 title = doc.title()
                 main_content = doc.summary()
-                
+
                 # Extract key information
                 output = f"Article: {title}\n"
                 output += f"URL: {url}\n"
                 output += "=" * 60 + "\n\n"
-                
+
                 # Extract summary (first paragraph)
                 paragraphs = main_content.split('\n')
                 if paragraphs:
                     output += f"Summary:\n{paragraphs[0][:500]}...\n\n"
-                
+
                 # Extract key points (look for bullet points or numbered lists)
                 output += "Key Points:\n"
                 for para in paragraphs[1:10]:  # Check first 10 paragraphs
-                    if para.strip() and (para.strip().startswith('•') or 
+                    if para.strip() and (para.strip().startswith('•') or
                                          para.strip().startswith('-') or
                                          para.strip().startswith('*') or
                                          any(para.strip().startswith(str(i)+'.') for i in range(1, 10))):
                         output += f"  {para.strip()}\n"
-                
+
                 # Extract quotes (look for text in quotes)
                 import re
                 quotes = re.findall(r'"([^"]{20,200})"', main_content)
@@ -783,24 +785,24 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
                     output += "\nNotable Quotes:\n"
                     for quote in quotes[:3]:
                         output += f'  "{quote}"\n'
-                
+
                 return output
-                
+
             except ImportError:
                 # Fallback: simple text extraction
-                output = f"Article Content (basic extraction)\n"
+                output = "Article Content (basic extraction)\n"
                 output += f"URL: {url}\n"
                 output += "=" * 60 + "\n\n"
-                
+
                 # Extract first few paragraphs
                 paragraphs = content.split('\n\n')
                 output += "Content Preview:\n"
                 for para in paragraphs[:5]:
                     if len(para.strip()) > 50:  # Skip very short lines
                         output += para.strip()[:300] + "...\n\n"
-                
+
                 return output
-            
+
         except Exception as e:
             error_msg = f"Error extracting article content: {str(e)}"
             span.set_attribute("error", error_msg)
@@ -832,7 +834,7 @@ async def web_search_tool(ctx: RunContext, query: str, max_results: int = 5, fet
                 return f"No web search results found for '{query}'."
 
             output_lines = [f"Web search results for '{query}':\n"]
-            
+
             # If fetch_content is enabled, get actual content from top results
             if fetch_content and results:
                 output_lines.append("(Fetching actual content from top results...)\n")
@@ -840,11 +842,11 @@ async def web_search_tool(ctx: RunContext, query: str, max_results: int = 5, fet
                     title = r.get("title", "No title")
                     href = r.get("href", "")
                     body = r.get("body", "")
-                    
+
                     output_lines.append(f"{idx}. {title}")
                     output_lines.append(f"   URL: {href}")
                     output_lines.append(f"   Summary: {body}\n")
-                    
+
                     # Fetch actual content
                     try:
                         content = await webfetch_tool(ctx, href, max_chars=3000)
@@ -854,7 +856,7 @@ async def web_search_tool(ctx: RunContext, query: str, max_results: int = 5, fet
                     except Exception as e:
                         output_lines.append(f"   (Could not fetch content: {str(e)})\n")
                     output_lines.append("-" * 60 + "\n")
-                
+
                 # Add remaining results without content
                 for idx, r in enumerate(results[3:], 4):
                     title = r.get("title", "No title")

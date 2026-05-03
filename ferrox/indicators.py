@@ -1,8 +1,7 @@
 """Status indicators for Ferrox CLI - thinking, running, fetching"""
 
-import threading
-import time
 from typing import Optional
+
 from rich.console import Console
 from rich.status import Status
 

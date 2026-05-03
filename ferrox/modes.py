@@ -23,7 +23,10 @@ class ModeManager:
         self.current_mode = self.mode_order[next_idx]
         return self.current_mode
 
-    def set_mode(self, mode_name: str):
+    def set_mode(self, mode_name: str | Mode):
+        if isinstance(mode_name, Mode):
+            self.current_mode = mode_name
+            return
         try:
             self.current_mode = Mode[mode_name.upper()]
         except KeyError:
@@ -78,7 +81,7 @@ class ModeManager:
 
     def load_state(self, filepath: str):
         if os.path.exists(filepath):
-            with open(filepath, "r") as f:
+            with open(filepath) as f:
                 state = json.load(f)
                 try:
                     self.current_mode = Mode[state["mode"]]

@@ -2,11 +2,10 @@
 Auto-generates step-by-step plans for complex tasks using pydantic-ai
 """
 
-import os
-from pathlib import Path
-from typing import List, Optional
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class TaskStep(BaseModel):
@@ -113,7 +112,7 @@ Output: {"goal": "Build a todo app", "steps": [{"id": 1, "description": "Create 
             set_current_plan(plan)
             return plan
 
-    except Exception as e:
+    except Exception:
         # Fallback on error
         plan = ProjectPlan(
             goal=task_description,
