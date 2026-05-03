@@ -17,13 +17,15 @@ def generate_diff(original_content: str, new_content: str, filename: str) -> lis
     original_lines = original_content.splitlines() if original_content else []
     new_lines = new_content.splitlines() if new_content else []
 
-    diff = list(difflib.unified_diff(
-        original_lines,
-        new_lines,
-        fromfile=f"original/{filename}",
-        tofile=f"modified/{filename}",
-        lineterm=""
-    ))
+    diff = list(
+        difflib.unified_diff(
+            original_lines,
+            new_lines,
+            fromfile=f"original/{filename}",
+            tofile=f"modified/{filename}",
+            lineterm="",
+        )
+    )
 
     return diff
 
@@ -33,10 +35,7 @@ def render_diff_inline(original_content: str, new_content: str, filename: str) -
     diff_lines = generate_diff(original_content, new_content, filename)
 
     table = Table(
-        title=f"Proposed Changes to {filename}",
-        show_header=False,
-        box=None,
-        padding=(0, 1, 0, 1)
+        title=f"Proposed Changes to {filename}", show_header=False, box=None, padding=(0, 1, 0, 1)
     )
 
     table.add_column("Line #", style="dim", width=6)
@@ -59,12 +58,7 @@ def render_diff_inline(original_content: str, new_content: str, filename: str) -
                 line_num += 1
                 table.add_row(str(line_num), line)
 
-    return Panel(
-        table,
-        border_style="blue",
-        title=f"[EDIT] {filename}",
-        title_align="left"
-    )
+    return Panel(table, border_style="blue", title=f"[EDIT] {filename}", title_align="left")
 
 
 def render_diff_side_by_side(original_content: str, new_content: str, filename: str) -> Panel:
@@ -114,22 +108,25 @@ def prompt_accept_reject(filename: str, timeout: int = 30) -> Optional[bool]:
     import sys
 
     print(f"\n[cyan]Review changes to {filename} above.[/cyan]")
-    print("[green]Press Enter[/green] to accept, [red]Esc[/red] to reject, [yellow]E[/yellow] to edit:")
+    print(
+        "[green]Press Enter[/green] to accept, [red]Esc[/red] to reject, [yellow]E[/yellow] to edit:"
+    )
 
     if sys.stdin.isatty():
         try:
             import termios
             import tty
+
             old_settings = termios.tcgetattr(sys.stdin)
             tty.setcbreak(sys.stdin.fileno())
             try:
                 key = sys.stdin.read(1)
-                if key == '\r' or key == '\n':
+                if key == "\r" or key == "\n":
                     return True
-                elif key == '\x1b':
+                elif key == "\x1b":
                     return False
-                elif key.lower() == 'e':
-                    return 'edit'
+                elif key.lower() == "e":
+                    return "edit"
             finally:
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
         except:
@@ -170,7 +167,7 @@ def apply_file_edit(file_path: str, content: str) -> str:
         abs_path = os.path.abspath(file_path)
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
 
-        with open(abs_path, 'w', encoding='utf-8') as f:
+        with open(abs_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         return f"Successfully updated {file_path} ({len(content)} characters)"

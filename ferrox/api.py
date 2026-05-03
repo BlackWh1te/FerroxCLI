@@ -16,8 +16,9 @@ from .exceptions import (
     RateLimitError,
     ModelNotFoundError,
     NetworkError,
-    TimeoutError
+    TimeoutError,
 )
+
 
 async def validate_provider(provider: ProviderConfig) -> tuple[bool, List[str], Optional[str]]:
     """Validate provider reachability and update models"""
@@ -26,7 +27,7 @@ async def validate_provider(provider: ProviderConfig) -> tuple[bool, List[str], 
             resp = await client.get(f"{provider.base_url}/models")
             if resp.status_code == 200:
                 data = resp.json()
-                models = [m.get('id') for m in data.get('data', []) if m.get('id')]
+                models = [m.get("id") for m in data.get("data", []) if m.get("id")]
                 provider.models = models
                 if not provider.default_model and models:
                     provider.default_model = models[0]
@@ -42,7 +43,9 @@ async def validate_provider(provider: ProviderConfig) -> tuple[bool, List[str], 
         return False, [], msg
 
 
-def validate_and_update_provider(provider: ProviderConfig, config: FerroxConfig, save: bool = True) -> ProviderConfig:
+def validate_and_update_provider(
+    provider: ProviderConfig, config: FerroxConfig, save: bool = True
+) -> ProviderConfig:
     """Validate provider and update its model list"""
     success, models, error = validate_provider(provider)
 
@@ -56,6 +59,7 @@ def validate_and_update_provider(provider: ProviderConfig, config: FerroxConfig,
 
     if save:
         from .config import save_config
+
         save_config(config)
 
     return provider
@@ -63,8 +67,12 @@ def validate_and_update_provider(provider: ProviderConfig, config: FerroxConfig,
 
 def fetch_models(config: FerroxConfig, force_refresh: bool = False) -> list[ModelInfo]:
     """Fetch available models from the configured provider"""
+    provider = config.get_active_provider()
+    if not provider:
+        return []
+
     cache = get_model_cache()
-    cache_key = config.base_url
+    cache_key = provider.base_url
     cache_duration = 3600
 
     if not force_refresh and cache_key in cache:
@@ -72,11 +80,8 @@ def fetch_models(config: FerroxConfig, force_refresh: bool = False) -> list[Mode
         if time.time() - cached_data.get("timestamp", 0) < cache_duration:
             return [ModelInfo(**m) for m in cached_data.get("models", [])]
 
-    url = f"{config.base_url}/models"
-    headers = {
-        "Authorization": f"Bearer {config.api_key}",
-        "Content-Type": "application/json"
-    }
+    url = f"{provider.base_url}/models"
+    headers = {"Authorization": f"Bearer {provider.api_key}", "Content-Type": "application/json"}
 
     try:
         with httpx.Client(timeout=config.timeout) as client:
@@ -90,25 +95,31 @@ def fetch_models(config: FerroxConfig, force_refresh: bool = False) -> list[Mode
 
             if "data" in data:
                 for m in data["data"]:
-                    models.append(ModelInfo(
-                        id=m.get("id", ""),
-                        name=m.get("id", ""),
-                        description=m.get("description", "")
-                    ))
+                    models.append(
+                        ModelInfo(
+                            id=m.get("id", ""),
+                            name=m.get("id", ""),
+                            description=m.get("description", ""),
+                        )
+                    )
             elif "models" in data:
                 for m in data["models"]:
                     if isinstance(m, dict):
-                        models.append(ModelInfo(
-                            id=m.get("id", m.get("name", "")),
-                            name=m.get("name", m.get("id", "")),
-                            description=m.get("description", "")
-                        ))
+                        models.append(
+                            ModelInfo(
+                                id=m.get("id", m.get("name", "")),
+                                name=m.get("name", m.get("id", "")),
+                                description=m.get("description", ""),
+                            )
+                        )
                     else:
                         models.append(ModelInfo(id=str(m)))
 
             cache[cache_key] = {
-                "models": [{"id": m.id, "name": m.name, "description": m.description} for m in models],
-                "timestamp": time.time()
+                "models": [
+                    {"id": m.id, "name": m.name, "description": m.description} for m in models
+                ],
+                "timestamp": time.time(),
             }
             save_model_cache(cache)
 
@@ -123,30 +134,28 @@ def fetch_models(config: FerroxConfig, force_refresh: bool = False) -> list[Mode
 
 
 def send_message(
-    config: FerroxConfig,
-    messages: list[dict],
-    model: Optional[str] = None,
-    stream: bool = True
+    config: FerroxConfig, messages: list[dict], model: Optional[str] = None, stream: bool = True
 ) -> Generator[str, None, None]:
     """Send a chat message and yield response chunks"""
+    provider = config.get_active_provider()
+    if not provider:
+        raise APIError("No active provider configured.")
+
     if model is None:
-        model = config.default_model
+        model = provider.default_model
 
     if model is None:
         raise APIError("No model specified. Use /model to select one.")
 
-    url = f"{config.base_url}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {config.api_key}",
-        "Content-Type": "application/json"
-    }
+    url = f"{provider.base_url}/chat/completions"
+    headers = {"Authorization": f"Bearer {provider.api_key}", "Content-Type": "application/json"}
 
     payload = {
         "model": model,
         "messages": messages,
         "stream": stream,
         "max_tokens": config.max_tokens,
-        "temperature": config.temperature
+        "temperature": config.temperature,
     }
 
     try:
@@ -167,6 +176,7 @@ def send_message(
                                     break
                                 try:
                                     import json
+
                                     chunk = json.loads(data)
                                     if "choices" in chunk and len(chunk["choices"]) > 0:
                                         delta = chunk["choices"][0].get("delta", {})
@@ -199,24 +209,66 @@ def send_message(
         elif status_code == 404:
             raise ModelNotFoundError(f"Model '{model}' not found", {"model": model})
         else:
-            raise ProviderError(f"API error ({status_code}): {e.response.text}", {"status_code": status_code})
+            raise ProviderError(
+                f"API error ({status_code}): {e.response.text}", {"status_code": status_code}
+            )
     except Exception as e:
         raise APIError(f"Error sending message: {str(e)}")
 
 
 class APIError(Exception):
     """Base class for API related errors"""
+
     def __init__(self, message, status_code=None):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
 
+
 class ModelInfo:
     """Represents an LLM model"""
+
     def __init__(self, id: str, name: str = "", description: str = ""):
         self.id = id
         self.name = name or id
         self.description = description
+
+
+class ToolCall:
+    """Represents a tool call from the LLM"""
+
+    def __init__(self, id: str, name: str, arguments: dict):
+        self.id = id
+        self.name = name
+        self.arguments = arguments
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """Create ToolCall from API response dictionary"""
+        import json
+
+        call_id = data.get("id", "")
+        function = data.get("function", {})
+        name = function.get("name", "")
+        args_str = function.get("arguments", "{}")
+        try:
+            if isinstance(args_str, str):
+                args = json.loads(args_str)
+            else:
+                args = args_str
+        except json.JSONDecodeError:
+            args = {}
+        return cls(id=call_id, name=name, arguments=args)
+
+    def to_dict(self):
+        """Convert ToolCall back to dictionary format"""
+        import json
+
+        return {
+            "id": self.id,
+            "type": "function",
+            "function": {"name": self.name, "arguments": json.dumps(self.arguments)},
+        }
 
 
 def send_message_with_tools(
@@ -224,23 +276,15 @@ def send_message_with_tools(
     model: str,
     base_url: str,
     api_key: Optional[str] = None,
-    tools_enabled: bool = True
+    tools_enabled: bool = True,
 ) -> tuple[str, List[ToolCall]]:
     """
     Send a chat message with tool support.
     """
     url = f"{base_url}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key or ''}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {api_key or ''}", "Content-Type": "application/json"}
 
-    payload = {
-        "model": model,
-        "messages": messages,
-        "max_tokens": 4096,
-        "temperature": 0.7
-    }
+    payload = {"model": model, "messages": messages, "max_tokens": 4096, "temperature": 0.7}
 
     if tools_enabled:
         payload["tools"] = get_available_tools()
@@ -273,11 +317,7 @@ def execute_tool_calls(tool_calls: List[ToolCall]) -> List[dict]:
     results = []
     for tc in tool_calls:
         result = execute_tool(tc.name, tc.arguments)
-        results.append({
-            "tool_call_id": tc.id,
-            "name": tc.name,
-            "content": result
-        })
+        results.append({"tool_call_id": tc.id, "name": tc.name, "content": result})
     return results
 
 
@@ -323,6 +363,7 @@ For normal conversation (greetings, questions, general help), respond as a helpf
 def detect_tool_from_message(user_message: str) -> Optional[tuple]:
     """Detect if user message requires a tool based on keywords"""
     import os
+
     msg = user_message.lower()
     original = user_message
 
@@ -333,13 +374,16 @@ def detect_tool_from_message(user_message: str) -> Optional[tuple]:
     # Read file - simple pattern matching
     # Look for file extensions in the message
     import re
-    file_pattern = r'\b([a-zA-Z0-9_\-\.]+\.(?:py|toml|json|md|txt|sh|yml|yaml|html|css|js|ts|tsx|jsx))\b'
+
+    file_pattern = (
+        r"\b([a-zA-Z0-9_\-\.]+\.(?:py|toml|json|md|txt|sh|yml|yaml|html|css|js|ts|tsx|jsx))\b"
+    )
     matches = re.findall(file_pattern, original)
     if matches:
         return ("read_file", {"file_path": matches[0]})
 
     # Also check for common filenames without extension
-    common_files = ['readme', 'config', 'setup', 'requirements']
+    common_files = ["readme", "config", "setup", "requirements"]
     for cf in common_files:
         if cf in msg:
             return ("read_file", {"file_path": cf})
@@ -353,7 +397,7 @@ def detect_tool_from_message(user_message: str) -> Optional[tuple]:
         for prefix in ["run ", "execute "]:
             if prefix in msg:
                 idx = msg.find(prefix)
-                cmd = original[idx + len(prefix):].strip()
+                cmd = original[idx + len(prefix) :].strip()
                 if cmd:
                     return ("run_command", {"command": cmd})
 
@@ -361,22 +405,19 @@ def detect_tool_from_message(user_message: str) -> Optional[tuple]:
 
 
 def send_message_with_tool_loop(
-    config: FerroxConfig,
-    messages: List[dict],
-    model: Optional[str] = None,
-    max_tool_calls: int = 5
+    config: FerroxConfig, messages: List[dict], model: Optional[str] = None, max_tool_calls: int = 5
 ) -> Generator[str, None, None]:
     """Send message with automatic tool execution loop."""
     provider = config.get_active_provider()
     if not provider:
         raise APIError("No active provider. Use /cfg to configure a provider.")
-    
+
     # Use model from argument, then provider's default, then first available
     if model is None:
         model = provider.default_model
     if model is None and provider.models:
         model = provider.models[0]
-        
+
     if model is None:
         raise APIError("No model specified. Use /model to select one.")
 
@@ -388,21 +429,27 @@ def send_message_with_tool_loop(
     tool_info = detect_tool_from_message(user_msg)
     if tool_info:
         from .ui.tool_logger import log_tool_execution
+
         tool_name, tool_args = tool_info
         result = execute_tool(tool_name, tool_args)
         log_tool_execution(tool_name, result)
         tool_call_id = f"auto_{tool_name}"
-        messages.append({
-            "role": "assistant",
-            "content": "",
-            "tool_calls": [{"id": tool_call_id, "type": "function", "function": {"name": tool_name, "arguments": json.dumps(tool_args)}}]
-        })
-        messages.append({
-            "role": "tool",
-            "tool_call_id": tool_call_id,
-            "name": tool_name,
-            "content": result
-        })
+        messages.append(
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": tool_call_id,
+                        "type": "function",
+                        "function": {"name": tool_name, "arguments": json.dumps(tool_args)},
+                    }
+                ],
+            }
+        )
+        messages.append(
+            {"role": "tool", "tool_call_id": tool_call_id, "name": tool_name, "content": result}
+        )
 
     url = f"{provider.base_url}/chat/completions"
     headers = {"Authorization": f"Bearer {provider.api_key}", "Content-Type": "application/json"}
@@ -414,7 +461,7 @@ def send_message_with_tool_loop(
             "max_tokens": config.max_tokens,
             "temperature": config.temperature,
             "tools": get_available_tools(),
-            "tool_choice": "auto"
+            "tool_choice": "auto",
         }
 
         try:
@@ -437,18 +484,38 @@ def send_message_with_tool_loop(
 
                 if tool_calls:
                     from .terminal import display_tool_output
+
                     for tc in tool_calls:
                         result = execute_tool(tc.name, tc.arguments)
                         display_tool_output(tc.name, result)
 
-                    messages.append({
-                        "role": "assistant",
-                        "content": content,
-                        "tool_calls": [{"id": tc.id, "type": "function", "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)}} for tc in tool_calls]
-                    })
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": content,
+                            "tool_calls": [
+                                {
+                                    "id": tc.id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": tc.name,
+                                        "arguments": json.dumps(tc.arguments),
+                                    },
+                                }
+                                for tc in tool_calls
+                            ],
+                        }
+                    )
                     for tc in tool_calls:
                         result = execute_tool(tc.name, tc.arguments)
-                        messages.append({"role": "tool", "tool_call_id": tc.id, "name": tc.name, "content": result})
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tc.id,
+                                "name": tc.name,
+                                "content": result,
+                            }
+                        )
                     continue
 
                 if content:
@@ -460,6 +527,12 @@ def send_message_with_tool_loop(
             raise APIError("Request timed out")
         except Exception as e:
             error_msg = str(e)
-            if "image" in error_msg.lower() or "vision" in error_msg.lower() or "image.png" in error_msg:
-                raise APIError("This model doesn't support image input. Please describe what you need instead.")
+            if (
+                "image" in error_msg.lower()
+                or "vision" in error_msg.lower()
+                or "image.png" in error_msg
+            ):
+                raise APIError(
+                    "This model doesn't support image input. Please describe what you need instead."
+                )
             raise APIError(f"Error: {error_msg}")

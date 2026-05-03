@@ -2,8 +2,10 @@ import json
 import os
 from typing import List, Dict, Optional
 
+
 class HistoryManager:
     """Manages chat history persistence and retrieval."""
+
     def __init__(self, history_file: str = os.path.expanduser("~/.ferrox/history.json")):
         self.history_file = history_file
         self.history: List[Dict] = []
@@ -12,14 +14,14 @@ class HistoryManager:
     def _load(self):
         if os.path.exists(self.history_file):
             try:
-                with open(self.history_file, 'r') as f:
+                with open(self.history_file, "r") as f:
                     self.history = json.load(f)
             except:
                 self.history = []
 
     def save(self):
         os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
-        with open(self.history_file, 'w') as f:
+        with open(self.history_file, "w") as f:
             json.dump(self.history, f, indent=2)
 
     def add(self, role: str, content: str, metadata: Optional[Dict] = None):

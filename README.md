@@ -104,6 +104,103 @@ ferrox/
 - **mirascope** - LLM integration layer
 - **opentelemetry** - Observability and tracing
 
+## 🛠️ Development
+
+### Environment Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd FerroxCLI
+   ```
+
+2. **Create a virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   # Install with development tools
+   pip install -e ".[dev]"
+
+   # Or install with browser support
+   pip install -e ".[browser,dev]"
+   ```
+
+4. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
+   ```
+
+### Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=ferrox --cov-report=html
+
+# Run specific test file
+pytest tests/test_config.py
+
+# Run with markers
+pytest -m unit          # Run only unit tests
+pytest -m integration   # Run only integration tests
+pytest -m "not slow"     # Skip slow tests
+```
+
+### Code Quality
+
+```bash
+# Lint with ruff
+ruff check ferrox/
+
+# Format with ruff
+ruff format ferrox/
+
+# Type check with mypy
+mypy ferrox/
+
+# Security scan with bandit
+bandit -r ferrox/
+
+# Run all quality checks
+ruff check ferrox/ && ruff format ferrox/ && mypy ferrox/ && bandit -r ferrox/
+```
+
+### Monitoring & Observability
+
+**Sentry Integration:**
+- Set `SENTRY_DSN` in `.env` to enable error tracking
+- Errors are automatically captured and sent to Sentry
+- Configure `SENTRY_ENVIRONMENT` for environment-specific tracking
+
+**Prometheus Metrics:**
+- Set `PROMETHEUS_PORT` in `.env` (default: 9090)
+- Metrics are automatically exposed at `http://localhost:PROMETHEUS_PORT/metrics`
+- Available metrics include:
+  - `ferrox_agent_requests_total` - Total agent requests
+  - `ferrox_agent_request_duration_seconds` - Request duration
+  - `ferrox_tool_calls_total` - Tool call counts
+  - `ferrox_tokens_used_total` - Token usage
+  - `ferrox_errors_total` - Error counts
+
+### AI Enhancements
+
+**Semantic Search:**
+- Uses sentence-transformers for code understanding
+- FAISS for fast vector similarity search
+- Can be used for intelligent code context retrieval
+
+**Official SDK Integration:**
+- OpenAI SDK: `ferrox.providers.openai_sdk.OpenAISDKProvider`
+- Anthropic SDK: `ferrox.providers.anthropic_sdk.AnthropicSDKProvider`
+- Use these for more reliable API interactions
+
 ---
 
 Built with passion for autonomous engineering. 🦊🚀

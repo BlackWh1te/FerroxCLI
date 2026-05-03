@@ -7,15 +7,16 @@ class Mode(Enum):
     NORMAL = "NORMAL"
     PLAN = "PLAN"
     BYPASS = "BYPASS"
+    EDIT = "EDIT"
 
 
 class ModeManager:
     def __init__(self):
         self.current_mode = Mode.NORMAL
-        self.mode_order = [Mode.NORMAL, Mode.PLAN, Mode.BYPASS]
+        self.mode_order = [Mode.NORMAL, Mode.PLAN, Mode.EDIT, Mode.BYPASS]
 
     def cycle_mode(self):
-        """Cycles: Normal -> Plan -> Bypass -> Normal"""
+        """Cycles: Normal -> Plan -> Edit -> Bypass -> Normal"""
         current_idx = self.mode_order.index(self.current_mode)
         next_idx = (current_idx + 1) % len(self.mode_order)
         self.current_mode = self.mode_order[next_idx]
@@ -31,8 +32,9 @@ class ModeManager:
         """Returns colored prefix for prompt_toolkit"""
         colors = {
             Mode.NORMAL: "#00FF00",
-            Mode.PLAN: "#FFFF00",
-            Mode.BYPASS: "#FF0000"
+            Mode.PLAN: "#FFA500",
+            Mode.EDIT: "#00BFFF",
+            Mode.BYPASS: "#FF0000",
         }
         color = colors.get(self.current_mode, "#FFFFFF")
         return f"[{self.current_mode.value}]"
@@ -40,21 +42,35 @@ class ModeManager:
     def get_mode_color(self) -> str:
         colors = {
             Mode.NORMAL: "green",
-            Mode.PLAN: "yellow",
-            Mode.BYPASS: "red"
+            Mode.PLAN: "orange1",
+            Mode.EDIT: "deep_sky_blue1",
+            Mode.BYPASS: "red",
         }
         return colors.get(self.current_mode, "white")
 
+    def get_mode_icon(self) -> str:
+        icons = {Mode.NORMAL: "●", Mode.PLAN: "◎", Mode.EDIT: "✎", Mode.BYPASS: "⚡"}
+        return icons.get(self.current_mode, "?")
+
+    def get_mode_description(self) -> str:
+        descriptions = {
+            Mode.NORMAL: "ask before write/exec",
+            Mode.PLAN: "shell allowed, write asks",
+            Mode.EDIT: "scoped edits, shell asks",
+            Mode.BYPASS: "auto-approve all",
+        }
+        return descriptions.get(self.current_mode, "")
+
     def save_state(self, filepath: str):
         state = {"mode": self.current_mode.value}
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(state, f)
 
     def load_state(self, filepath: str):
         if os.path.exists(filepath):
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 state = json.load(f)
                 try:
-                    self.current_mode = Mode[state['mode']]
+                    self.current_mode = Mode[state["mode"]]
                 except (KeyError, ValueError):
                     self.current_mode = Mode.NORMAL

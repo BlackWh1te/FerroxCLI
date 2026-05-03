@@ -27,37 +27,39 @@ from rich.text import Text
 console = Console()
 
 
-FERROX_STYLE = Style.from_dict({
-    "top-bar": "bg:#1e1e1e #cccccc",
-    "top-bar.mode-normal": "#00ff00 bold",
-    "top-bar.mode-plan": "#ffff00 bold",
-    "top-bar.mode-bypass": "#ff0000 bold",
-    "input": "bg:#252525 #ffffff",
-    "input.prompt": "#00aaff bold",
-    "output": "bg:#1e1e1e #dddddd",
-    "output.user": "#00ff00 bold",
-    "output.ai": "#00aaff bold",
-    "output.system": "#ffff00 bold",
-    "output.error": "#ff4444 bold",
-    "output.tool": "#aa88ff bold",
-    "output.tool-header": "#aa88ff bold",
-    "status": "bg:#1e1e1e #666666",
-    "status.model": "#00aaff bold",
-    "status.info": "#888888",
-    "border": "#333333",
-    "slash-menu": "bg:#2a2a2a #cccccc",
-    "slash-menu.selected": "bg:#00aaff #ffffff",
-    "slash-menu.title": "bold #ffffff",
-    "slash-menu.item": "#cccccc",
-    "slash-menu.desc": "italic #888888",
-    "permission-prompt": "bg:#2a2a2a #ffffff",
-    "permission-prompt.title": "bold #ffaa00",
-    "permission-prompt.option": "#cccccc",
-    "permission-prompt.selected": "bg:#00aaff #ffffff",
-    "diff.add": "bg:#1a3d1a #4caf50",
-    "diff.remove": "bg:#3d1a1a #f44336",
-    "diff.header": "italic #888888",
-})
+FERROX_STYLE = Style.from_dict(
+    {
+        "top-bar": "bg:#1e1e1e #cccccc",
+        "top-bar.mode-normal": "#00ff00 bold",
+        "top-bar.mode-plan": "#ffff00 bold",
+        "top-bar.mode-bypass": "#ff0000 bold",
+        "input": "bg:#252525 #ffffff",
+        "input.prompt": "#00aaff bold",
+        "output": "bg:#1e1e1e #dddddd",
+        "output.user": "#00ff00 bold",
+        "output.ai": "#00aaff bold",
+        "output.system": "#ffff00 bold",
+        "output.error": "#ff4444 bold",
+        "output.tool": "#aa88ff bold",
+        "output.tool-header": "#aa88ff bold",
+        "status": "bg:#1e1e1e #666666",
+        "status.model": "#00aaff bold",
+        "status.info": "#888888",
+        "border": "#333333",
+        "slash-menu": "bg:#2a2a2a #cccccc",
+        "slash-menu.selected": "bg:#00aaff #ffffff",
+        "slash-menu.title": "bold #ffffff",
+        "slash-menu.item": "#cccccc",
+        "slash-menu.desc": "italic #888888",
+        "permission-prompt": "bg:#2a2a2a #ffffff",
+        "permission-prompt.title": "bold #ffaa00",
+        "permission-prompt.option": "#cccccc",
+        "permission-prompt.selected": "bg:#00aaff #ffffff",
+        "diff.add": "bg:#1a3d1a #4caf50",
+        "diff.remove": "bg:#3d1a1a #f44336",
+        "diff.header": "italic #888888",
+    }
+)
 
 
 COMMANDS = [
@@ -91,7 +93,9 @@ class SlashCommandMenu:
             self.filtered_commands = [
                 (cmd, desc, help_text)
                 for cmd, desc, help_text in COMMANDS
-                if cmd.lower().startswith("/" + search) or search in cmd.lower() or search in desc.lower()
+                if cmd.lower().startswith("/" + search)
+                or search in cmd.lower()
+                or search in desc.lower()
             ]
         else:
             self.filtered_commands = COMMANDS.copy()
@@ -172,11 +176,7 @@ class TerminalState:
 
     def get_top_bar_text(self) -> List:
         mode = self.mode_manager.current_mode
-        mode_colors = {
-            "NORMAL": "#00ff00",
-            "PLAN": "#ffff00",
-            "BYPASS": "#ff0000"
-        }
+        mode_colors = {"NORMAL": "#00ff00", "PLAN": "#ffff00", "BYPASS": "#ff0000"}
         color = mode_colors.get(mode.value, "#ffffff")
 
         mode_text = f" {mode.value} "
@@ -192,7 +192,7 @@ class TerminalState:
         return [
             ("class:top-bar", f" > {placeholder}"),
             ("", " " * 20),
-            (f"class:top-bar.mode-{mode.value.lower()}", mode_text)
+            (f"class:top-bar.mode-{mode.value.lower()}", mode_text),
         ]
 
     def get_status_bar_text(self) -> List:
@@ -200,7 +200,10 @@ class TerminalState:
         return [
             ("class:status.model", self.model_name),
             ("class:status.info", f" · {len(self.chat_history)} messages"),
-            ("class:status.info", f" · Context: {self.context_tokens // 1000}k / {self.max_tokens // 1000}k tokens ({percent}%)"),
+            (
+                "class:status.info",
+                f" · Context: {self.context_tokens // 1000}k / {self.max_tokens // 1000}k tokens ({percent}%)",
+            ),
         ]
 
     def get_output_text(self) -> List:
@@ -236,14 +239,15 @@ class TerminalState:
         if not self.slash_menu.visible:
             return []
 
-        lines = [
-            ("class:slash-menu.title", "Commands"),
-            ("", "\n")
-        ]
+        lines = [("class:slash-menu.title", "Commands"), ("", "\n")]
 
         for idx, (cmd, desc, help_text) in enumerate(self.slash_menu.filtered_commands):
             prefix = "» " if idx == self.slash_menu.selected_index else "  "
-            style = "class:slash-menu.selected" if idx == self.slash_menu.selected_index else "class:slash-menu.item"
+            style = (
+                "class:slash-menu.selected"
+                if idx == self.slash_menu.selected_index
+                else "class:slash-menu.item"
+            )
             lines.append((style, f"{prefix}{cmd}"))
             lines.append(("class:slash-menu.desc", f" - {help_text}"))
             lines.append(("", "\n"))
@@ -277,7 +281,7 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
             "\n".join(formatted),
             title=f"[run_command] {cwd}",
             border_style="purple",
-            padding=(0, 1)
+            padding=(0, 1),
         )
 
     elif tool_name == "list_directory":
@@ -294,10 +298,7 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
                 formatted.append(line)
 
         return Panel(
-            "\n".join(formatted),
-            title=f"[list_directory]",
-            border_style="blue",
-            padding=(0, 1)
+            "\n".join(formatted), title=f"[list_directory]", border_style="blue", padding=(0, 1)
         )
 
     elif tool_name == "read_file":
@@ -311,23 +312,18 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
                 syntax,
                 title=f"[read_file] {header.replace('File: ', '')}",
                 border_style="green",
-                padding=(0, 1)
+                padding=(0, 1),
             )
         except:
             return Panel(
                 content[:500] + ("..." if len(content) > 500 else ""),
                 title=f"[read_file] {header}",
                 border_style="green",
-                padding=(0, 1)
+                padding=(0, 1),
             )
 
     elif tool_name == "write_file":
-        return Panel(
-            output,
-            title=f"[write_file]",
-            border_style="yellow",
-            padding=(0, 1)
-        )
+        return Panel(output, title=f"[write_file]", border_style="yellow", padding=(0, 1))
 
     elif tool_name == "web_search":
         lines = output.split("\n")
@@ -343,10 +339,7 @@ def format_tool_output(tool_name: str, output: str, cwd: str = "") -> Panel:
                 formatted.append(line)
 
         return Panel(
-            "\n".join(formatted),
-            title="[web_search] Results",
-            border_style="cyan",
-            padding=(0, 1)
+            "\n".join(formatted), title="[web_search] Results", border_style="cyan", padding=(0, 1)
         )
 
 
@@ -358,21 +351,33 @@ def display_tool_output(tool_name: str, output: str, cwd: str = ""):
 
 def display_permission_prompt(prompt: str, command: str = "", path: str = ""):
     """Display permission prompt"""
-    console.print(Panel.fit(
-        f"[yellow bold]Ferrox wants to:[/yellow bold]\n{command or prompt}\n\n"
-        "[cyan]Options:[/cyan]\n"
-        "  [green]↑↓[/green] Navigate  [green]Enter[/green] Select  [green]Esc[/green] Cancel",
-        title="[yellow]Permission Request[/yellow]",
-        border_style="yellow",
-        padding=(1, 2)
-    ))
+    console.print(
+        Panel.fit(
+            f"[yellow bold]Ferrox wants to:[/yellow bold]\n{command or prompt}\n\n"
+            "[cyan]Options:[/cyan]\n"
+            "  [green]↑↓[/green] Navigate  [green]Enter[/green] Select  [green]Esc[/green] Cancel",
+            title="[yellow]Permission Request[/yellow]",
+            border_style="yellow",
+            padding=(1, 2),
+        )
+    )
 
 
 def get_editor_command() -> str:
-    return os.environ.get('EDITOR') or os.environ.get('VISUAL') or (
-        "notepad" if platform.system() == "Windows" else (
-            "code" if subprocess.call(["where", "code"], stdout=subprocess.DEVNULL) == 0 else (
-                "vim" if subprocess.call(["which", "vim"], stdout=subprocess.DEVNULL) == 0 else "nano"
+    return (
+        os.environ.get("EDITOR")
+        or os.environ.get("VISUAL")
+        or (
+            "notepad"
+            if platform.system() == "Windows"
+            else (
+                "code"
+                if subprocess.call(["where", "code"], stdout=subprocess.DEVNULL) == 0
+                else (
+                    "vim"
+                    if subprocess.call(["which", "vim"], stdout=subprocess.DEVNULL) == 0
+                    else "nano"
+                )
             )
         )
     )
@@ -402,5 +407,15 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
 
 def _command_exists(cmd: str) -> bool:
     if platform.system() == "Windows":
-        return subprocess.call(f"where {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
-    return subprocess.call(f"which {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
+        return (
+            subprocess.call(
+                f"where {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            == 0
+        )
+    return (
+        subprocess.call(
+            f"which {cmd}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        == 0
+    )

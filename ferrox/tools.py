@@ -21,12 +21,12 @@ def get_available_tools():
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "The relative or absolute path to list. Default to '.' for current directory."
+                            "description": "The relative or absolute path to list. Default to '.' for current directory.",
                         }
                     },
-                    "required": ["path"]
-                }
-            }
+                    "required": ["path"],
+                },
+            },
         },
         {
             "type": "function",
@@ -36,18 +36,15 @@ def get_available_tools():
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "file_path": {
-                            "type": "string",
-                            "description": "Path to the file to read."
-                        },
+                        "file_path": {"type": "string", "description": "Path to the file to read."},
                         "max_lines": {
                             "type": "number",
-                            "description": "Maximum number of lines to read (optional, default 500)."
-                        }
+                            "description": "Maximum number of lines to read (optional, default 500).",
+                        },
                     },
-                    "required": ["file_path"]
-                }
-            }
+                    "required": ["file_path"],
+                },
+            },
         },
         {
             "type": "function",
@@ -59,16 +56,16 @@ def get_available_tools():
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the file to write."
+                            "description": "Path to the file to write.",
                         },
                         "content": {
                             "type": "string",
-                            "description": "The content to write to the file."
-                        }
+                            "description": "The content to write to the file.",
+                        },
                     },
-                    "required": ["file_path", "content"]
-                }
-            }
+                    "required": ["file_path", "content"],
+                },
+            },
         },
         {
             "type": "function",
@@ -80,16 +77,16 @@ def get_available_tools():
                     "properties": {
                         "file_path": {
                             "type": "string",
-                            "description": "Path to the file to write."
+                            "description": "Path to the file to write.",
                         },
                         "content": {
                             "type": "string",
-                            "description": "The content to write to the file."
-                        }
+                            "description": "The content to write to the file.",
+                        },
                     },
-                    "required": ["file_path", "content"]
-                }
-            }
+                    "required": ["file_path", "content"],
+                },
+            },
         },
         {
             "type": "function",
@@ -101,17 +98,17 @@ def get_available_tools():
                     "properties": {
                         "command": {
                             "type": "string",
-                            "description": "The shell command to execute."
+                            "description": "The shell command to execute.",
                         },
                         "cwd": {
                             "type": "string",
-                            "description": "Working directory for the command (optional)."
-                        }
+                            "description": "Working directory for the command (optional).",
+                        },
                     },
-                    "required": ["command"]
-                }
-            }
-        }
+                    "required": ["command"],
+                },
+            },
+        },
     ]
 
 
@@ -147,19 +144,19 @@ def execute_read_file(file_path: str, max_lines: int = None) -> dict:
         if not os.path.exists(abs_path):
             return {"error": f"File does not exist: {file_path}", "success": False}
 
-        with open(abs_path, 'r', encoding='utf-8') as f:
+        with open(abs_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         total_lines = len(lines)
         read_lines = max_lines if max_lines and max_lines < total_lines else total_lines
-        content = ''.join(lines[:read_lines])
-        
+        content = "".join(lines[:read_lines])
+
         return {
             "file_path": file_path,
             "lines_read": (1, read_lines),
             "total_lines": total_lines,
             "content": content,
-            "success": True
+            "success": True,
         }
     except Exception as e:
         return {"error": str(e), "success": False}
@@ -172,7 +169,7 @@ def execute_write_file(file_path: str, content: str) -> str:
 
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
 
-        with open(abs_path, 'w', encoding='utf-8') as f:
+        with open(abs_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         return f"Successfully wrote to {abs_path} ({len(content)} characters)"
@@ -189,12 +186,7 @@ def execute_run_command(command: str, cwd: str = None) -> dict:
             cwd = os.getcwd()
 
         result = subprocess.run(
-            command,
-            shell=True,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=30
+            command, shell=True, cwd=cwd, capture_output=True, text=True, timeout=30
         )
 
         return {
@@ -203,7 +195,7 @@ def execute_run_command(command: str, cwd: str = None) -> dict:
             "stdout": result.stdout,
             "stderr": result.stderr,
             "exit_code": result.returncode,
-            "success": result.returncode == 0
+            "success": result.returncode == 0,
         }
     except Exception as e:
         return {"error": str(e), "exit_code": -1, "success": False}
@@ -211,7 +203,7 @@ def execute_run_command(command: str, cwd: str = None) -> dict:
 
 def _format_size(size: int) -> str:
     """Format file size"""
-    for unit in ['B', 'KB', 'MB', 'GB']:
+    for unit in ["B", "KB", "MB", "GB"]:
         if size < 1024:
             return f"{size}{unit}"
         size /= 1024
@@ -228,7 +220,7 @@ TOOL_MAP = {
     "read_file": execute_read_file,
     "write_file": execute_write_file,
     "write_file_direct": execute_write_file_direct,
-    "run_command": execute_run_command
+    "run_command": execute_run_command,
 }
 
 
@@ -256,7 +248,7 @@ def execute_write_file_with_review(file_path: str, content: str) -> tuple:
 
         original_content = ""
         if os.path.exists(abs_path):
-            with open(abs_path, 'r', encoding='utf-8') as f:
+            with open(abs_path, "r", encoding="utf-8") as f:
                 original_content = f.read()
 
         accepted, edit_action = show_diff_and_prompt(original_content, content, file_path)

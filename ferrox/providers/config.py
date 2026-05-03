@@ -1,6 +1,7 @@
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 from datetime import datetime
 from pydantic import BaseModel, Field
+
 
 class ProviderConfig(BaseModel):
     id: str
@@ -13,3 +14,11 @@ class ProviderConfig(BaseModel):
     last_used: Optional[datetime] = None
     is_validated: bool = False
     last_validated: Optional[datetime] = None
+
+
+class SubagentConfig(BaseModel):
+    """Configuration for subagent default models"""
+
+    researcher: str = Field(default="ollama:llama3.2", description="Model for researcher subagent")
+    coder: str = Field(default="ollama:qwen2.5-coder:7b", description="Model for coder subagent")
+    reviewer: str = Field(default="ollama:llama3.2", description="Model for reviewer subagent")

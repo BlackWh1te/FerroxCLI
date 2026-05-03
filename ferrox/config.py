@@ -6,18 +6,31 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Literal
 from pydantic import BaseModel, Field, field_validator
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
-from .providers.config import ProviderConfig
+from .providers.config import ProviderConfig, SubagentConfig
+from .social_config import SocialConfig
+
 
 class FerroxConfig(BaseModel):
     """Ferrox configuration with multi-provider support"""
+
     version: str = Field(default="1.2.0", description="Config version")
     providers: List[ProviderConfig] = Field(default_factory=list, description="List of providers")
     active_provider_id: Optional[str] = Field(default=None, description="Currently active provider")
     timeout: int = Field(default=30, description="Request timeout in seconds")
     max_tokens: int = Field(default=4096, description="Maximum tokens to generate")
     temperature: float = Field(default=0.7, description="Sampling temperature")
+    subagent_defaults: Optional[SubagentConfig] = Field(
+        default_factory=lambda: SubagentConfig(), description="Default models for subagents"
+    )
+    social: Optional[SocialConfig] = Field(
+        default=None, description="X Bot social media configuration"
+    )
 
     @field_validator("timeout")
     @classmethod
@@ -75,30 +88,30 @@ def ensure_config_dir() -> None:
 
 
 def get_default_config() -> FerroxConfig:
-    """Return a default configuration with Ollama as first provider"""
+    """Return a default configuration with Ollama as first provider and environment variable support"""
     return FerroxConfig(
         providers=[
             ProviderConfig(
                 id="ollama-local",
                 name="Ollama Local",
                 type="ollama",
-                base_url="http://localhost:11434/v1",
-                api_key="ollama",
+                base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+                api_key=os.getenv("OLLAMA_API_KEY", "ollama"),
                 models=[],
-                default_model=None
+                default_model=None,
             )
         ],
         active_provider_id="ollama-local",
-        timeout=60,
-        max_tokens=4096,
-        temperature=0.7
+        timeout=int(os.getenv("FERROX_TIMEOUT", "60")),
+        max_tokens=int(os.getenv("FERROX_MAX_TOKENS", "4096")),
+        temperature=float(os.getenv("FERROX_TEMPERATURE", "0.7")),
     )
 
 
 def load_config() -> Optional[FerroxConfig]:
     """Load configuration from file"""
     from .exceptions import ConfigurationError, ValidationError
-    
+
     if not CONFIG_FILE.exists():
         return None
 
@@ -114,7 +127,7 @@ def load_config() -> Optional[FerroxConfig]:
                 type="custom",
                 base_url=data.get("base_url", ""),
                 api_key=data.get("api_key", ""),
-                default_model=data.get("default_model")
+                default_model=data.get("default_model"),
             )
             data["providers"] = [old_provider.model_dump()]
             data["active_provider_id"] = "default"
@@ -124,13 +137,15 @@ def load_config() -> Optional[FerroxConfig]:
             data.pop("default_model", None)
 
         return FerroxConfig(**data)
-        
+
     except json.JSONDecodeError as e:
         raise ConfigurationError(f"Invalid JSON in config file: {e}", {"file": str(CONFIG_FILE)})
     except ValidationError as e:
         raise ConfigurationError(f"Config validation failed: {e.message}", {"details": e.details})
     except PermissionError as e:
-        raise ConfigurationError(f"Permission denied reading config: {e}", {"file": str(CONFIG_FILE)})
+        raise ConfigurationError(
+            f"Permission denied reading config: {e}", {"file": str(CONFIG_FILE)}
+        )
     except Exception as e:
         raise ConfigurationError(f"Error loading config: {e}", {"file": str(CONFIG_FILE)})
 
@@ -175,12 +190,15 @@ def save_model_cache(data: dict) -> None:
 
 def get_editor() -> str:
     """Get the user's preferred editor"""
-    return os.environ.get("EDITOR") or os.environ.get("VISUAL") or (
-        "code" if os.name == "nt" else ("vim" if which("vim") else "nano")
+    return (
+        os.environ.get("EDITOR")
+        or os.environ.get("VISUAL")
+        or ("code" if os.name == "nt" else ("vim" if which("vim") else "nano"))
     )
 
 
 def which(cmd: str) -> bool:
     """Check if command exists in PATH"""
     import shutil
+
     return shutil.which(cmd) is not None
