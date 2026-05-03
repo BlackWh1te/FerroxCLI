@@ -85,6 +85,7 @@ social = [
     "twikit>=2.0.0",
     "feedparser>=6.0.0",
     "pytz>=2024.1",
+    "playwright-stealth>=1.0.0",
 ]
 dev = [
     "pytest>=7.4.0",
