@@ -21,7 +21,8 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-from .x_browser_login import _save_cookies_playwright_format, get_cookie_path
+from .utils.browser_login import save_cookies_playwright_format as _save_cookies_playwright_format
+from .x_browser_login import get_cookie_path
 
 # ---------------------------------------------------------------------------
 # HTML page served to the user
