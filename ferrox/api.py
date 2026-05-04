@@ -1,10 +1,11 @@
 """API module for interacting with LLM providers"""
 
+from __future__ import annotations
+
 import json
 import time
 from collections.abc import Generator
 from datetime import datetime
-from typing import List, Optional
 
 import httpx
 
@@ -22,7 +23,7 @@ from .logger_new import logger
 from .tools import execute_tool, get_available_tools
 
 
-async def validate_provider(provider: ProviderConfig) -> tuple[bool, List[str], Optional[str]]:
+async def validate_provider(provider: ProviderConfig) -> tuple[bool, list[str], str | None]:
     """Validate provider reachability and update models"""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -128,15 +129,15 @@ def fetch_models(config: FerroxConfig, force_refresh: bool = False) -> list[Mode
             return models
 
     except httpx.ConnectError as e:
-        raise APIError(f"Connection error: {e}")
+        raise APIError(f"Connection error: {e}") from e
     except httpx.TimeoutException:
-        raise APIError("Request timed out")
+        raise APIError("Request timed out") from None
     except Exception as e:
-        raise APIError(f"Error fetching models: {str(e)}")
+        raise APIError(f"Error fetching models: {str(e)}") from e
 
 
 def send_message(
-    config: FerroxConfig, messages: list[dict], model: Optional[str] = None, stream: bool = True
+    config: FerroxConfig, messages: list[dict], model: str | None = None, stream: bool = True
 ) -> Generator[str, None, None]:
     """Send a chat message and yield response chunks"""
     provider = config.get_active_provider()
@@ -185,8 +186,8 @@ def send_message(
                                         content = delta.get("content", "")
                                         if content:
                                             yield content
-                                except Exception:
-                                    continue
+                                except json.JSONDecodeError:  # nosec: B112 — skip unparseable items
+                                    continue  # nosec: B112 — skip malformed SSE chunks
             else:
                 response = client.post(url, json=payload, headers=headers)
                 if response.status_code != 200:
@@ -197,34 +198,25 @@ def send_message(
                     yield data["choices"][0].get("message", {}).get("content", "")
 
     except httpx.ConnectError as e:
-        raise NetworkError(f"Connection failed: {e}", {"url": url})
+        raise NetworkError(f"Connection failed: {e}", {"url": url}) from e
     except httpx.TimeoutException:
-        raise TimeoutError("Request timed out", {"url": url, "timeout": config.timeout})
+        raise TimeoutError("Request timed out", {"url": url, "timeout": config.timeout}) from None
     except httpx.HTTPStatusError as e:
         status_code = e.response.status_code
         if status_code == 401:
-            raise AuthenticationError("Authentication failed. Check your API key.", {"url": url})
+            raise AuthenticationError("Authentication failed. Check your API key.", {"url": url}) from e
         elif status_code == 403:
-            raise AuthenticationError("Access forbidden. Check API key permissions.", {"url": url})
+            raise AuthenticationError("Access forbidden. Check API key permissions.", {"url": url}) from e
         elif status_code == 429:
-            raise RateLimitError("Rate limit exceeded. Try again later.", {"url": url})
+            raise RateLimitError("Rate limit exceeded. Try again later.", {"url": url}) from e
         elif status_code == 404:
-            raise ModelNotFoundError(f"Model '{model}' not found", {"model": model})
+            raise ModelNotFoundError(f"Model '{model}' not found", {"model": model}) from e
         else:
             raise ProviderError(
                 f"API error ({status_code}): {e.response.text}", {"status_code": status_code}
-            )
+            ) from e
     except Exception as e:
-        raise APIError(f"Error sending message: {str(e)}")
-
-
-class APIError(Exception):
-    """Base class for API related errors"""
-
-    def __init__(self, message, status_code=None):
-        self.message = message
-        self.status_code = status_code
-        super().__init__(self.message)
+        raise APIError(f"Error sending message: {str(e)}") from e
 
 
 class ModelInfo:
@@ -254,10 +246,7 @@ class ToolCall:
         name = function.get("name", "")
         args_str = function.get("arguments", "{}")
         try:
-            if isinstance(args_str, str):
-                args = json.loads(args_str)
-            else:
-                args = args_str
+            args = json.loads(args_str) if isinstance(args_str, str) else args_str
         except json.JSONDecodeError:
             args = {}
         return cls(id=call_id, name=name, arguments=args)
@@ -274,12 +263,12 @@ class ToolCall:
 
 
 def send_message_with_tools(
-    messages: List[dict],
+    messages: list[dict],
     model: str,
     base_url: str,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     tools_enabled: bool = True,
-) -> tuple[str, List[ToolCall]]:
+) -> tuple[str, list[ToolCall]]:
     """
     Send a chat message with tool support.
     """
@@ -314,7 +303,7 @@ def send_message_with_tools(
         raise e
 
 
-def execute_tool_calls(tool_calls: List[ToolCall]) -> List[dict]:
+def execute_tool_calls(tool_calls: list[ToolCall]) -> list[dict]:
     """Execute tool calls and return tool results"""
     results = []
     for tc in tool_calls:
@@ -323,7 +312,7 @@ def execute_tool_calls(tool_calls: List[ToolCall]) -> List[dict]:
     return results
 
 
-def parse_tool_from_text(text: str) -> Optional[ToolCall]:
+def parse_tool_from_text(text: str) -> ToolCall | None:
     """Parse tool call from text response (fallback for models that don't use tool_calls)"""
     import re
 
@@ -362,7 +351,7 @@ IMPORTANT: You cannot read image files. If asked to view an image, explain that 
 For normal conversation (greetings, questions, general help), respond as a helpful assistant WITHOUT using tools. Do not list files or read files unless explicitly asked."""
 
 
-def detect_tool_from_message(user_message: str) -> Optional[tuple]:
+def detect_tool_from_message(user_message: str) -> tuple | None:
     """Detect if user message requires a tool based on keywords"""
 
     msg = user_message.lower()
@@ -406,7 +395,7 @@ def detect_tool_from_message(user_message: str) -> Optional[tuple]:
 
 
 def send_message_with_tool_loop(
-    config: FerroxConfig, messages: List[dict], model: Optional[str] = None, max_tool_calls: int = 5
+    config: FerroxConfig, messages: list[dict], model: str | None = None, max_tool_calls: int = 5
 ) -> Generator[str, None, None]:
     """Send message with automatic tool execution loop."""
     provider = config.get_active_provider()
@@ -523,9 +512,9 @@ def send_message_with_tool_loop(
                     yield content
                 break
         except httpx.HTTPError as e:
-            raise APIError(f"API error: {str(e)}")
+            raise APIError(f"API error: {str(e)}") from e
         except httpx.TimeoutException:
-            raise APIError("Request timed out")
+            raise APIError("Request timed out") from None
         except Exception as e:
             error_msg = str(e)
             if (
@@ -535,5 +524,5 @@ def send_message_with_tool_loop(
             ):
                 raise APIError(
                     "This model doesn't support image input. Please describe what you need instead."
-                )
-            raise APIError(f"Error: {error_msg}")
+                ) from e
+            raise APIError(f"Error: {error_msg}") from e

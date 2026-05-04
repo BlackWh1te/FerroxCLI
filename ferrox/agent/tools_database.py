@@ -4,7 +4,7 @@ Provides database operations with permission checks and safety features.
 Supports SQLite, PostgreSQL, and MySQL with read-only defaults.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 # Import tracer
 from opentelemetry import trace
@@ -33,7 +33,7 @@ permissions = PermissionEngine()
 
 async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, query: str, read_only: bool = True) -> str:
     """Execute a SQL query on a database. Read-only by default for safety.
-    
+
     Args:
         db_type: Database type (sqlite, postgresql, mysql)
         connection_string: Database connection string or file path for SQLite
@@ -122,7 +122,7 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
             return error_msg
 
 
-async def _execute_sqlite(db_path: str, query: str) -> Dict[str, Any]:
+async def _execute_sqlite(db_path: str, query: str) -> dict[str, Any]:
     """Execute SQLite query."""
     try:
         import sqlite3
@@ -148,7 +148,7 @@ async def _execute_sqlite(db_path: str, query: str) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def _execute_postgresql(connection_string: str, query: str) -> Dict[str, Any]:
+async def _execute_postgresql(connection_string: str, query: str) -> dict[str, Any]:
     """Execute PostgreSQL query."""
     try:
         import psycopg2
@@ -174,7 +174,7 @@ async def _execute_postgresql(connection_string: str, query: str) -> Dict[str, A
         return {"error": str(e)}
 
 
-async def _execute_mysql(connection_string: str, query: str) -> Dict[str, Any]:
+async def _execute_mysql(connection_string: str, query: str) -> dict[str, Any]:
     """Execute MySQL query."""
     try:
         import mysql.connector
@@ -200,7 +200,7 @@ async def _execute_mysql(connection_string: str, query: str) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-def _parse_mysql_connection_string(conn_str: str) -> Dict[str, str]:
+def _parse_mysql_connection_string(conn_str: str) -> dict[str, str]:
     """Parse MySQL connection string into parameters."""
     # Simple parsing for mysql://user:pass@host:port/database format
     if conn_str.startswith("mysql://"):
@@ -222,7 +222,7 @@ def _parse_mysql_connection_string(conn_str: str) -> Dict[str, str]:
         password = user_pass[1] if len(user_pass) > 1 else ""
     else:
         user = ""
-        password = ""
+        password = ""  # nosec: B105 — empty password parsed from missing URI credential
         host = auth_host[0]
 
     host_port = host.split(":")
@@ -244,7 +244,7 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
         span.set_attribute("db_type", db_type)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -328,7 +328,7 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
 
 async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str, migration_sql: str, dry_run: bool = True) -> str:
     """Execute database migration SQL. Requires write permission. Dry-run by default.
-    
+
     Args:
         db_type: Database type (sqlite, postgresql, mysql)
         connection_string: Database connection string or file path for SQLite

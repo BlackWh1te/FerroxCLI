@@ -3,7 +3,7 @@
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 from .event_bus import AgentEvent, EventType, event_bus
 from .orchestrator import FerroxAgent
@@ -47,10 +47,10 @@ class AgentPool:
     def __init__(self, config, max_concurrent: int = 4):
         self.config = config
         self.max_concurrent = max_concurrent
-        self.agents: Dict[str, FerroxAgent] = {}
+        self.agents: dict[str, FerroxAgent] = {}
         self.task_queue: asyncio.PriorityQueue = asyncio.PriorityQueue()
-        self.active_tasks: Dict[str, AgentTask] = {}
-        self.completed_tasks: List[AgentTask] = []
+        self.active_tasks: dict[str, AgentTask] = {}
+        self.completed_tasks: list[AgentTask] = []
         self.running = False
         self._task_counter = 0
 
@@ -243,22 +243,22 @@ class AgentPool:
 
         return None
 
-    def get_all_tasks(self) -> List[AgentTask]:
+    def get_all_tasks(self) -> list[AgentTask]:
         """Get all active and recent tasks."""
         return list(self.active_tasks.values()) + self.completed_tasks
 
-    def get_active_tasks(self) -> List[AgentTask]:
+    def get_active_tasks(self) -> list[AgentTask]:
         """Get currently active tasks."""
         return list(self.active_tasks.values())
 
-    def get_completed_tasks(self, limit: int = 10) -> List[AgentTask]:
+    def get_completed_tasks(self, limit: int = 10) -> list[AgentTask]:
         """Get recent completed tasks."""
         return self.completed_tasks[-limit:]
 
     def get_pool_status(self) -> dict:
         """Get overall pool status."""
         available_agents = sum(
-            1 for agent_id in self.agents.keys()
+            1 for agent_id in self.agents
             if not any(
                 task.assigned_to == agent_id and task.status == "running"
                 for task in self.active_tasks.values()

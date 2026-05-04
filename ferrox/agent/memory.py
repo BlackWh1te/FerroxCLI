@@ -9,7 +9,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Import tracer
 from opentelemetry import trace
@@ -23,8 +23,8 @@ class MemoryEntry:
     timestamp: str
     role: str  # "user" or "assistant"
     content: str
-    embedding: Optional[List[float]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    embedding: Optional[list[float]] = None
+    metadata: Optional[dict[str, Any]] = None
     summary: Optional[str] = None  # Summarized version for context optimization
 
 
@@ -33,7 +33,7 @@ class ConversationMemory:
 
     def __init__(self, memory_dir: Optional[Path] = None):
         """Initialize conversation memory.
-        
+
         Args:
             memory_dir: Directory to store memory files (defaults to ~/.ferrox/memory)
         """
@@ -47,8 +47,8 @@ class ConversationMemory:
         self.embeddings_file = self.memory_dir / "embeddings.faiss"
         self.preferences_file = self.memory_dir / "preferences.json"
 
-        self.entries: List[MemoryEntry] = []
-        self.preferences: Dict[str, Any] = {
+        self.entries: list[MemoryEntry] = []
+        self.preferences: dict[str, Any] = {
             "coding_style": {},
             "preferred_patterns": [],
             "frequent_commands": defaultdict(int),
@@ -74,16 +74,16 @@ class ConversationMemory:
                 return None
         return self._embedding_model
 
-    def _get_embedding(self, text: str) -> Optional[List[float]]:
+    def _get_embedding(self, text: str) -> Optional[list[float]]:
         """Get embedding for text."""
         model = self._get_embedding_model()
         if model is None:
             return None
         return model.encode(text).tolist()
 
-    def add_entry(self, role: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+    def add_entry(self, role: str, content: str, metadata: Optional[dict[str, Any]] = None) -> None:
         """Add a new entry to conversation memory.
-        
+
         Args:
             role: "user" or "assistant"
             content: The message content
@@ -105,7 +105,7 @@ class ConversationMemory:
             self._update_preferences(role, content, metadata)
             self._save_conversations()
 
-    def _update_preferences(self, role: str, content: str, metadata: Dict[str, Any]) -> None:
+    def _update_preferences(self, role: str, content: str, metadata: dict[str, Any]) -> None:
         """Update user preferences based on conversation."""
         # Track frequent commands
         if metadata and "command" in metadata:
@@ -133,14 +133,14 @@ class ConversationMemory:
         if len(self.preferences["preferred_patterns"]) > 100:
             self.preferences["preferred_patterns"] = self.preferences["preferred_patterns"][-100:]
 
-    def semantic_search(self, query: str, top_k: int = 5, role_filter: Optional[str] = None) -> List[MemoryEntry]:
+    def semantic_search(self, query: str, top_k: int = 5, role_filter: Optional[str] = None) -> list[MemoryEntry]:
         """Search conversation history semantically.
-        
+
         Args:
             query: Search query
             top_k: Number of results to return
             role_filter: Optional filter by role ("user" or "assistant")
-        
+
         Returns:
             List of matching memory entries
         """
@@ -173,7 +173,7 @@ class ConversationMemory:
             similarities.sort(key=lambda x: x[0], reverse=True)
             return [entry for _, entry in similarities[:top_k]]
 
-    def _keyword_search(self, query: str, top_k: int, role_filter: Optional[str] = None) -> List[MemoryEntry]:
+    def _keyword_search(self, query: str, top_k: int, role_filter: Optional[str] = None) -> list[MemoryEntry]:
         """Fallback keyword search when embeddings are not available."""
         query_lower = query.lower()
         candidates = self.entries
@@ -190,13 +190,13 @@ class ConversationMemory:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [entry for _, entry in scored[:top_k]]
 
-    def get_recent_context(self, max_entries: int = 10, max_tokens: int = 4000) -> List[Dict[str, str]]:
+    def get_recent_context(self, max_entries: int = 10, max_tokens: int = 4000) -> list[dict[str, str]]:
         """Get recent conversation context with token optimization.
-        
+
         Args:
             max_entries: Maximum number of recent entries to include
             max_tokens: Maximum tokens to include (uses summarization for older entries)
-        
+
         Returns:
             List of message dictionaries for LLM context
         """
@@ -244,7 +244,7 @@ class ConversationMemory:
 
             return result
 
-    def _summarize_entries(self, entries: List[MemoryEntry]) -> str:
+    def _summarize_entries(self, entries: list[MemoryEntry]) -> str:
         """Summarize a list of conversation entries."""
         if not entries:
             return ""
@@ -261,7 +261,7 @@ class ConversationMemory:
 
         return " | ".join(summary_parts)
 
-    def get_preferences(self) -> Dict[str, Any]:
+    def get_preferences(self) -> dict[str, Any]:
         """Get learned user preferences."""
         return {
             "coding_style": dict(self.preferences["coding_style"]),
@@ -272,10 +272,10 @@ class ConversationMemory:
 
     def clear_old_entries(self, days_to_keep: int = 30) -> int:
         """Clear entries older than specified days.
-        
+
         Args:
             days_to_keep: Number of days to keep entries
-        
+
         Returns:
             Number of entries removed
         """
@@ -341,7 +341,7 @@ class ConversationMemory:
         except Exception as e:
             print(f"Error saving preferences: {e}")
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get memory statistics."""
         return {
             "total_entries": len(self.entries),

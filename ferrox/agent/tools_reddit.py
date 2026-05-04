@@ -4,14 +4,13 @@ Provides rate-limited, anti-ban protected access to Reddit API.
 All tools include built-in safety checks and logging.
 """
 
-import os
-import random
 import asyncio
 import hashlib
 import json
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any, Tuple
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Optional
+
 from pydantic_ai import RunContext
 
 # Import tracer
@@ -28,21 +27,20 @@ except ImportError:
     _current_agent = None
 
 # Ferrox imports
+from ..exceptions import ToolExecutionError
 from ..reddit_config import (
     RedditConfig,
-    RedditState,
+    get_rate_limits_for_account_type,
     load_reddit_state,
     save_reddit_state,
-    get_rate_limits_for_account_type,
 )
 from ..utils.content_safety import (
-    sanitize_content,
-    moderation_check,
-    validate_tweet_length,
     check_duplicate_content,
-    is_safe_domain,
+    moderation_check,
+    sanitize_content,
+    validate_tweet_length,
 )
-from ..exceptions import ToolExecutionError
+
 
 # Token bucket rate limiter for Reddit calls
 class TokenBucket:
@@ -94,7 +92,7 @@ def _get_praw_client(config: RedditConfig):
         raise ToolExecutionError(
             "praw not installed. Run: pip install praw",
             {"action": "get_praw_client"}
-        )
+        ) from None
 
     creds = config.credentials
 
@@ -111,8 +109,8 @@ def _get_praw_client(config: RedditConfig):
             # Verify auth
             client.user.me()
             return client
-        except Exception:
-            pass  # Fall through to cookie/browser fallback
+        except Exception:  # nosec: B110 — intentional suppression
+            pass  # nosec: B110 — Fall through to cookie/browser fallback
 
     # Fallback: try browser cookies if available
     cookie_path = Path.home() / ".ferrox" / "reddit_cookies.json"
@@ -143,13 +141,13 @@ def _get_browser_driver():
         raise ToolExecutionError(
             "Playwright not installed. Run: pip install playwright",
             {"action": "get_browser_driver"}
-        )
+        ) from None
 
     # Return a factory; actual page creation is async and done per-call
     return async_playwright
 
 
-def validate_reddit_session() -> Optional[Dict[str, Any]]:
+def validate_reddit_session() -> Optional[dict[str, Any]]:
     """Validate the current Reddit session.
 
     Checks if PRAW OAuth or browser cookies exist in usable form.
@@ -171,14 +169,14 @@ def validate_reddit_session() -> Optional[Dict[str, Any]]:
                     "created_utc": me.created_utc,
                     "is_mod": me.is_mod,
                 }
-        except Exception:
-            pass
+        except Exception:  # nosec: B110 — intentional suppression
+            pass  # nosec: B110 — PRAW not available, fall back to browser cookies
 
     # Check browser cookies
     cookie_path = Path.home() / ".ferrox" / "reddit_cookies.json"
     if cookie_path.exists():
         try:
-            with open(cookie_path, "r", encoding="utf-8") as f:
+            with open(cookie_path, encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, dict) and "cookies" in data:
                 return {
@@ -189,8 +187,8 @@ def validate_reddit_session() -> Optional[Dict[str, Any]]:
                     "is_mod": False,
                     "_cookie_dict": data["cookies"],
                 }
-        except Exception:
-            pass
+        except Exception:  # nosec: B110 — intentional suppression
+            pass  # nosec: B110 — cookie file missing or invalid, auth unavailable
 
     return None
 
@@ -224,7 +222,6 @@ async def reddit_check_account_health_tool(ctx: RunContext) -> str:
 
         # Get config
         if hasattr(ctx, "deps") and hasattr(ctx.deps, "config"):
-            from ..config import FerroxConfig
             main_config = ctx.deps.config
             if hasattr(main_config, "reddit") and main_config.reddit:
                 config = main_config.reddit
@@ -406,7 +403,7 @@ async def post_submission_tool(
     text: str,
     url: Optional[str] = None,
     dry_run: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Post a submission to a subreddit.
 
     Args:
@@ -474,7 +471,7 @@ async def post_submission_tool(
             output += f"Subreddit: r/{subreddit}\n"
             output += f"Title: {title}\n"
             output += f"Type: {'Link' if url else 'Self'}\n"
-            output += f"Safe: Yes\n"
+            output += "Safe: Yes\n"
             output += "\nType 'APPROVE' to post, or revise and try again."
             _log_tool_result("post_submission", "Draft presented for approval", True)
             return {"success": True, "data": {"draft": True}, "message": output}
@@ -514,7 +511,7 @@ async def post_submission_tool(
         state.consecutive_failures = 0
         save_reddit_state(state)
 
-        output = f"Posted successfully!\n"
+        output = "Posted successfully!\n"
         output += f"Post ID: {submission.id}\n"
         output += f"Permalink: https://reddit.com{submission.permalink}"
 
@@ -537,7 +534,7 @@ async def post_comment_tool(
     post_id: str,
     text: str,
     dry_run: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Post a comment on a Reddit submission.
 
     Args:
@@ -616,7 +613,7 @@ async def post_comment_tool(
         state.consecutive_failures = 0
         save_reddit_state(state)
 
-        output = f"Comment posted successfully!\n"
+        output = "Comment posted successfully!\n"
         output += f"Comment ID: {comment.id}\n"
         output += f"Permalink: https://reddit.com{comment.permalink}"
 
@@ -669,7 +666,7 @@ async def get_trending_subreddits_tool(ctx: RunContext) -> str:
         return f"Error getting trending subreddits: {e}"
 
 
-async def get_user_karma_tool(ctx: RunContext) -> Dict[str, Any]:
+async def get_user_karma_tool(ctx: RunContext) -> dict[str, Any]:
     """Get current user's karma breakdown.
 
     Returns:
@@ -712,7 +709,7 @@ async def get_user_karma_tool(ctx: RunContext) -> Dict[str, Any]:
         return {"success": False, "data": None, "message": f"Error getting karma: {e}"}
 
 
-async def reddit_check_visibility_tool(ctx: RunContext, post_id: str) -> Dict[str, Any]:
+async def reddit_check_visibility_tool(ctx: RunContext, post_id: str) -> dict[str, Any]:
     """Check if a post is visible (not shadowbanned / removed).
 
     Args:
@@ -772,7 +769,7 @@ async def reddit_check_visibility_tool(ctx: RunContext, post_id: str) -> Dict[st
         return {"success": False, "data": None, "message": f"Error checking visibility: {e}"}
 
 
-async def delete_submission_tool(ctx: RunContext, post_id: str) -> Dict[str, Any]:
+async def delete_submission_tool(ctx: RunContext, post_id: str) -> dict[str, Any]:
     """Delete a Reddit submission.
 
     Args:
@@ -833,7 +830,7 @@ async def get_inbox_tool(ctx: RunContext, limit: int = 20) -> str:
         inbox = client.inbox
         messages = []
 
-        for i, item in enumerate(inbox.unread(limit=min(limit, 50))):
+        for item in inbox.unread(limit=min(limit, 50)):
             msg_type = "message" if hasattr(item, "subject") else "comment_reply"
             author = getattr(item, "author", None)
             author_name = author.name if author else "(deleted)"

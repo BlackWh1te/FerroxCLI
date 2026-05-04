@@ -1,7 +1,8 @@
 """Skill manager for Ferrox - Load and inject skill documentation into agent prompts."""
 
+import contextlib
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 # Skill directory
 SKILLS_DIR = Path(__file__).parent
@@ -9,10 +10,10 @@ SKILLS_DIR = Path(__file__).parent
 
 def get_skill_content(skill_name: str) -> Optional[str]:
     """Load skill content from SKILL.md file.
-    
+
     Args:
         skill_name: Name of the skill directory (e.g., "x_bot")
-        
+
     Returns:
         Skill content as string, or None if not found
     """
@@ -31,10 +32,10 @@ def get_skill_content(skill_name: str) -> Optional[str]:
 
 def load_skill(skill_name: str) -> dict:
     """Load skill metadata and content.
-    
+
     Args:
         skill_name: Name of the skill directory
-        
+
     Returns:
         Dictionary with skill metadata and content
     """
@@ -62,10 +63,8 @@ def load_skill(skill_name: str) -> dict:
                 # Extract version
                 for line in init_content.split("\n"):
                     if "SKILL_VERSION" in line:
-                        try:
+                        with contextlib.suppress(IndexError, ValueError, AttributeError):
                             result["version"] = line.split("=")[1].strip().strip('"')
-                        except (IndexError, ValueError, AttributeError):
-                            pass
         except (OSError, FileNotFoundError, PermissionError):
             pass
 
@@ -76,9 +75,9 @@ def load_skill(skill_name: str) -> dict:
     return result
 
 
-def list_skills() -> List[str]:
+def list_skills() -> list[str]:
     """List all available skills.
-    
+
     Returns:
         List of skill names
     """
@@ -100,15 +99,15 @@ class SkillManager:
     """Manages skill loading and prompt injection."""
 
     def __init__(self):
-        self.active_skills: List[str] = []
+        self.active_skills: list[str] = []
         self.skill_cache: dict = {}
 
     def activate_skill(self, skill_name: str) -> bool:
         """Activate a skill by name.
-        
+
         Args:
             skill_name: Name of skill to activate
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -125,10 +124,10 @@ class SkillManager:
 
     def deactivate_skill(self, skill_name: str) -> bool:
         """Deactivate a skill by name.
-        
+
         Args:
             skill_name: Name of skill to deactivate
-            
+
         Returns:
             True if successful
         """
@@ -140,7 +139,7 @@ class SkillManager:
 
     def get_active_skills_prompt(self) -> str:
         """Get combined prompt from all active skills.
-        
+
         Returns:
             Combined skill prompt text
         """
@@ -164,18 +163,18 @@ class SkillManager:
 
     def is_skill_active(self, skill_name: str) -> bool:
         """Check if a skill is currently active.
-        
+
         Args:
             skill_name: Name of skill to check
-            
+
         Returns:
             True if active
         """
         return skill_name in self.active_skills
 
-    def get_active_skill_names(self) -> List[str]:
+    def get_active_skill_names(self) -> list[str]:
         """Get list of active skill names.
-        
+
         Returns:
             List of active skill names
         """

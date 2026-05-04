@@ -5,7 +5,7 @@ and request/response history tracking.
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Import tracer
 from opentelemetry import trace
@@ -32,21 +32,21 @@ except ImportError:
 permissions = PermissionEngine()
 
 # Request/response history
-_request_history: List[Dict[str, Any]] = []
+_request_history: list[dict[str, Any]] = []
 
 
 async def api_test_tool(
     ctx: RunContext,
     url: str,
     method: str = "GET",
-    headers: Optional[Dict[str, str]] = None,
+    headers: Optional[dict[str, str]] = None,
     body: Optional[str] = None,
-    auth: Optional[Dict[str, str]] = None,
+    auth: Optional[dict[str, str]] = None,
     expected_status: Optional[int] = None,
-    assertions: Optional[List[str]] = None
+    assertions: Optional[list[str]] = None
 ) -> str:
     """Test an API endpoint with optional authentication and assertions.
-    
+
     Args:
         url: API endpoint URL
         method: HTTP method (GET, POST, PUT, DELETE, PATCH, etc.)
@@ -196,7 +196,7 @@ async def api_test_tool(
 
 async def api_mock_tool(ctx: RunContext, endpoint: str, response: str, method: str = "GET", status_code: int = 200) -> str:
     """Generate a mock API response definition for testing purposes.
-    
+
     Args:
         endpoint: API endpoint path (e.g., /api/users)
         response: Mock response data (JSON string)
@@ -209,7 +209,7 @@ async def api_mock_tool(ctx: RunContext, endpoint: str, response: str, method: s
         span.set_attribute("status_code", status_code)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -257,7 +257,7 @@ async def api_mock_tool(ctx: RunContext, endpoint: str, response: str, method: s
 
 async def openapi_parse_tool(ctx: RunContext, url_or_path: str) -> str:
     """Parse OpenAPI/Swagger schema from URL or file path.
-    
+
     Args:
         url_or_path: URL to OpenAPI spec or local file path
     """
@@ -265,7 +265,7 @@ async def openapi_parse_tool(ctx: RunContext, url_or_path: str) -> str:
         span.set_attribute("url_or_path", url_or_path)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -331,7 +331,7 @@ async def openapi_parse_tool(ctx: RunContext, url_or_path: str) -> str:
                 output += f"Available Endpoints ({len(spec['paths'])}):\n"
                 for path, methods in spec["paths"].items():
                     for method, details in methods.items():
-                        operation_id = details.get("operationId", "N/A")
+                        details.get("operationId", "N/A")
                         summary = details.get("summary", "N/A")
                         output += f"  {method.upper():6} {path:40} - {summary[:50]}\n"
             else:
@@ -362,7 +362,7 @@ async def openapi_parse_tool(ctx: RunContext, url_or_path: str) -> str:
 
 async def api_history_tool(ctx: RunContext, limit: int = 10) -> str:
     """Get recent API request history.
-    
+
     Args:
         limit: Number of recent requests to show (default: 10)
     """
@@ -370,7 +370,7 @@ async def api_history_tool(ctx: RunContext, limit: int = 10) -> str:
         span.set_attribute("limit", limit)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -404,7 +404,7 @@ async def api_history_tool(ctx: RunContext, limit: int = 10) -> str:
 
 async def api_diff_tool(ctx: RunContext, url1: str, url2: str, method: str = "GET") -> str:
     """Compare responses from two API endpoints.
-    
+
     Args:
         url1: First API endpoint URL
         url2: Second API endpoint URL
@@ -416,7 +416,7 @@ async def api_diff_tool(ctx: RunContext, url1: str, url2: str, method: str = "GE
         span.set_attribute("method", method)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 

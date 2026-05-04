@@ -1,5 +1,6 @@
 """Main CLI module for Ferrox"""
 
+import contextlib
 import os
 import sys
 
@@ -9,17 +10,13 @@ if os.name == "nt":
         import ctypes
         ctypes.windll.kernel32.SetConsoleOutputCP(65001)  # UTF-8
         ctypes.windll.kernel32.SetConsoleCP(65001)
-    except Exception:
+    except Exception:  # nosec: B110 — intentional suppression
         pass
     # Also try to reconfigure stdout/stderr
-    try:
+    with contextlib.suppress(Exception):
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
-    try:
+    with contextlib.suppress(Exception):
         sys.stderr.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
 
 import subprocess
 from datetime import datetime
@@ -40,16 +37,16 @@ init_sentry()
 if os.getenv("PROMETHEUS_ENABLED", "false").lower() == "true":
     start_metrics_server()
 
-from .agent.agent_pool import initialize_agent_pool
-from .agent.event_bus import EventType, event_bus
-from .agent.loop import AgentLoop
-from .agent.orchestrator import FerroxAgent
-from .api import (
+from .agent.agent_pool import initialize_agent_pool  # noqa: E402
+from .agent.event_bus import EventType, event_bus  # noqa: E402
+from .agent.loop import AgentLoop  # noqa: E402
+from .agent.orchestrator import FerroxAgent  # noqa: E402
+from .api import (  # noqa: E402
     APIError,
     fetch_models,
     validate_provider,
 )
-from .config import (
+from .config import (  # noqa: E402
     CONFIG_FILE,
     FerroxConfig,
     ensure_config_dir,
@@ -58,7 +55,7 @@ from .config import (
     save_config,
     validate_config,
 )
-from .exceptions import (
+from .exceptions import (  # noqa: E402
     AuthenticationError,
     FerroxError,
     NetworkError,
@@ -67,21 +64,21 @@ from .exceptions import (
     TimeoutError,
     ToolExecutionError,
 )
-from .fallback import FallbackEngine  # Import FallbackEngine
-from .logger import get_logger
-from .metrics_realtime import realtime_metrics
-from .modes import Mode, ModeManager
-from .permissions import PermissionAction, PermissionEngine
-from .ui_legacy import (
+from .fallback import FallbackEngine  # noqa: E402
+from .logger import get_logger  # noqa: E402
+from .metrics_realtime import realtime_metrics  # noqa: E402
+from .modes import Mode, ModeManager  # noqa: E402
+from .permissions import PermissionAction, PermissionEngine  # noqa: E402
+from .ui_legacy import (  # noqa: E402
+    ask_confirmation,
     console,
     display_error,
     display_models,
     display_success,
     display_system,
     display_warning,
-    get_user_input,
 )
-from .utils.indexer import build_project_index
+from .utils.indexer import build_project_index  # noqa: E402
 
 SESSION_STATE_FILE = Path.home() / ".ferrox" / "session_state.json"
 
@@ -240,17 +237,13 @@ def list_models(config: FerroxConfig) -> bool:
         return False
 
 
-import asyncio
-import os
-import sys
+import asyncio  # noqa: E402
+import os  # noqa: E402
+import sys  # noqa: E402
 
-from rich.console import Console
-
-from .async_ui import create_prompt_session, get_user_input
-from .config import FerroxConfig
-from .logger_new import logger
-
-console = Console()
+from .async_ui import create_prompt_session, get_user_input  # noqa: E402
+from .config import FerroxConfig  # noqa: E402
+from .logger_new import logger  # noqa: E402
 
 
 async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
@@ -314,7 +307,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
     # Initialize pydantic-ai agent with ID for tracking
     ferrox_agent = FerroxAgent(config, agent_id="main", agent_role="main")
     session_state["project_index"] = None
-    TOKEN_LIMIT = 32000
+    token_limit = 32000
 
     # Initialize prompt sessions with mode-aware styling
     from .async_ui import create_busy_session
@@ -339,7 +332,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
         user_input = await get_user_input(session=prompt_session)
 
         # Memory Management
-        if current_tokens > TOKEN_LIMIT:
+        if current_tokens > token_limit:
             console.print("[dim]🧠 Compressing memory...[/dim]")
             provider = config.get_active_provider()
             model_name = provider.default_model if provider else "gpt-4o"
@@ -353,8 +346,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
 
         # Inject Index/Search context
         if session_state.get("project_index"):
-            files = "\n".join(list(session_state["project_index"].keys())[:50])
-            context = f"\n\nPROJECT_STRUCTURE:\n{files}"
+            "\n".join(list(session_state["project_index"].keys())[:50])
             # This is a temporary injection, don't save to history manager
 
         # Add search count
@@ -692,7 +684,12 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 except (IndexError, ValueError):
                     console.print("[red]Usage: /step <number>[/red]")
                 continue
-
+            elif command.startswith("/delegate "):
+                parts = command.split(" ", 2)
+                if len(parts) < 3:
+                    console.print("[red]Usage: /delegate <role> <task> [--model <model>][/red]")
+                    continue
+                role = parts[1]
                 rest = parts[2]
                 model = None
 
@@ -1441,7 +1438,7 @@ def validate():
 @click.option("--no-animation", is_flag=True, help="Skip logo animation on startup")
 def start(verbose, no_animation):
     """Start interactive chat session"""
-    logger = get_logger(verbose)
+    get_logger(verbose)
 
     config = check_config()
 

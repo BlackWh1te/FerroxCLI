@@ -3,7 +3,7 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Optional
 
 import psutil
 
@@ -53,7 +53,7 @@ class RealTimeMetrics:
     """Real-time metrics collector for agent monitoring."""
 
     def __init__(self, collection_interval: float = 5.0):
-        self.agent_metrics: Dict[str, AgentMetrics] = {}
+        self.agent_metrics: dict[str, AgentMetrics] = {}
         self.system_metrics = SystemMetrics()
         self.collection_interval = collection_interval
         self.running = False
@@ -124,7 +124,7 @@ class RealTimeMetrics:
     async def _on_status_change(self, event: AgentEvent):
         """Track status changes."""
         agent_id = event.agent_id
-        status = event.data.get('status')
+        event.data.get('status')
 
         if agent_id not in self.agent_metrics:
             self.agent_metrics[agent_id] = AgentMetrics(
@@ -252,7 +252,7 @@ class RealTimeMetrics:
         """Get metrics for a specific agent."""
         return self.agent_metrics.get(agent_id)
 
-    def get_all_metrics(self) -> Dict[str, AgentMetrics]:
+    def get_all_metrics(self) -> dict[str, AgentMetrics]:
         """Get metrics for all agents."""
         return self.agent_metrics
 
@@ -260,7 +260,7 @@ class RealTimeMetrics:
         """Get current system metrics."""
         return self.system_metrics
 
-    def get_summary(self) -> Dict[str, any]:
+    def get_summary(self) -> dict[str, any]:
         """Get a summary of all metrics."""
         total_tasks = sum(m.tasks_completed for m in self.agent_metrics.values())
         total_failed = sum(m.tasks_failed for m in self.agent_metrics.values())

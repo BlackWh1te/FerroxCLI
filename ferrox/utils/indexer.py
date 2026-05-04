@@ -38,8 +38,8 @@ async def build_project_index(root_dir: str) -> dict:
                 if defs:
                     index[rel_path] = defs
 
-            except Exception:
-                continue
+            except (OSError, UnicodeDecodeError, SyntaxError):  # nosec: B112 — skip unparseable items
+                continue  # nosec: B112 — skip files we can't parse
 
     return index
 

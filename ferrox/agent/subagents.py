@@ -2,7 +2,7 @@
 Supports specialized subagents (Researcher, Coder, Reviewer) with dynamic Ollama models
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
@@ -15,7 +15,7 @@ class SubagentResult(BaseModel):
 
     role: str
     summary: str
-    artifacts: List[str] = Field(default_factory=list)
+    artifacts: list[str] = Field(default_factory=list)
     success: bool
     model_used: str
     error: Optional[str] = None
@@ -23,8 +23,8 @@ class SubagentResult(BaseModel):
 
 # --- Subagent System Prompts ---
 
-RESEARCHER_PROMPT = """You are an expert technical researcher. Your goal is to find accurate information, 
-documentation, and best practices. 
+RESEARCHER_PROMPT = """You are an expert technical researcher. Your goal is to find accurate information,
+documentation, and best practices.
 
 Guidelines:
 - Search for relevant documentation and resources

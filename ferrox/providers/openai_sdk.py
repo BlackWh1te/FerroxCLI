@@ -1,7 +1,7 @@
 """OpenAI SDK integration for Ferrox"""
 
 import os
-from typing import List, Optional
+from typing import Optional
 
 from openai import AsyncOpenAI
 
@@ -16,7 +16,7 @@ class OpenAISDKProvider:
 
     async def chat_completion(
         self,
-        messages: List[dict],
+        messages: list[dict],
         model: str = "gpt-4",
         temperature: float = 0.7,
         max_tokens: int = 4096,
@@ -39,17 +39,17 @@ class OpenAISDKProvider:
             )
             return response.choices[0].message.content
         except Exception as e:
-            raise Exception(f"OpenAI API error: {e}")
+            raise Exception(f"OpenAI API error: {e}") from e
 
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         """List available models from OpenAI"""
         try:
             models = await self.client.models.list()
             return [model.id for model in models.data]
         except Exception as e:
-            raise Exception(f"Failed to list OpenAI models: {e}")
+            raise Exception(f"Failed to list OpenAI models: {e}") from e
 
-    async def embed_text(self, text: str, model: str = "text-embedding-ada-002") -> List[float]:
+    async def embed_text(self, text: str, model: str = "text-embedding-ada-002") -> list[float]:
         """
         Get embeddings for text
 
@@ -64,4 +64,4 @@ class OpenAISDKProvider:
             response = await self.client.embeddings.create(model=model, input=text)
             return response.data[0].embedding
         except Exception as e:
-            raise Exception(f"Failed to get embeddings: {e}")
+            raise Exception(f"Failed to get embeddings: {e}") from e

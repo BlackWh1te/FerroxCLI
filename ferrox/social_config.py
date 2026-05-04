@@ -5,7 +5,7 @@ Provides Pydantic models for X credentials, schedule, rate limits, and bot setti
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -46,10 +46,13 @@ class NightMode(BaseModel):
     @classmethod
     def validate_hours(cls, v: int, info) -> int:
         """Ensure end hour is after start hour."""
-        if hasattr(info, "data") and info.data.get("start_hour") is not None:
-            if v <= info.data["start_hour"]:
-                # If end is before start, assume next day (valid for night mode)
-                pass
+        if (
+            hasattr(info, "data")
+            and info.data.get("start_hour") is not None
+            and v <= info.data["start_hour"]
+        ):
+            # If end is before start, assume next day (valid for night mode)
+            pass
         return v
 
 
@@ -65,7 +68,7 @@ class PostingSchedule(BaseModel):
 class ContentPreferences(BaseModel):
     """Content generation preferences."""
 
-    default_hashtags: List[str] = Field(default_factory=list)
+    default_hashtags: list[str] = Field(default_factory=list)
     tone: Literal["professional", "casual", "witty", "neutral"] = Field(default="casual")
     max_hashtags_per_post: int = Field(default=3, ge=0, le=10)
     include_media: bool = Field(default=True)
@@ -107,15 +110,15 @@ class SocialState(BaseModel):
     last_reset_date: Optional[datetime] = Field(default=None)
 
     # Recent posts for deduplication
-    recent_post_hashes: List[dict] = Field(default_factory=list)
+    recent_post_hashes: list[dict] = Field(default_factory=list)
 
     # Session info
     last_login: Optional[datetime] = Field(default=None)
     session_valid: bool = Field(default=False)
 
     # Recent tweet IDs for operations
-    recent_tweets: List[dict] = Field(default_factory=list)
-    pending_replies: List[dict] = Field(default_factory=list)
+    recent_tweets: list[dict] = Field(default_factory=list)
+    pending_replies: list[dict] = Field(default_factory=list)
 
     # Daemon status
     daemon_running: bool = Field(default=False)
@@ -163,7 +166,7 @@ class SocialConfig(BaseModel):
     )
 
     # News sources for content
-    news_sources: List[str] = Field(default_factory=lambda: [
+    news_sources: list[str] = Field(default_factory=lambda: [
         "https://news.ycombinator.com/rss",
         "https://techcrunch.com/feed/",
     ])
@@ -202,10 +205,10 @@ def get_rate_limits_for_account_type(
     account_type: Literal["new", "warming", "established", "legacy"]
 ) -> RateLimits:
     """Get appropriate rate limits for account type.
-    
+
     Args:
         account_type: Type of X account
-        
+
     Returns:
         RateLimits configuration
     """
@@ -225,7 +228,7 @@ SOCIAL_CONFIG_KEY = "social"  # Key in main FerroxConfig
 
 def load_social_state() -> SocialState:
     """Load social bot state from file.
-    
+
     Returns:
         SocialState object
     """
@@ -243,10 +246,10 @@ def load_social_state() -> SocialState:
 
 def save_social_state(state: SocialState) -> bool:
     """Save social bot state to file.
-    
+
     Args:
         state: State to save
-        
+
     Returns:
         True if successful
     """

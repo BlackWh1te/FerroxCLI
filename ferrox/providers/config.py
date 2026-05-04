@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +10,7 @@ class ProviderConfig(BaseModel):
     type: Literal["openai", "anthropic", "google", "ollama", "lm-studio", "vllm", "custom"]
     base_url: str
     api_key: Optional[str] = None
-    models: List[str] = []
+    models: list[str] = []
     default_model: Optional[str] = None
     last_used: Optional[datetime] = None
     is_validated: bool = False

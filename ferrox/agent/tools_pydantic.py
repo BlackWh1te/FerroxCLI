@@ -6,6 +6,7 @@ from ..exceptions import ToolExecutionError
 from ..modes import Mode
 from ..permissions import PermissionAction, PermissionEngine
 from ..tools import execute_list_directory, execute_read_file, execute_run_command
+from ..utils.indexer import find_symbol_usage
 from ..utils.process_manager import process_manager
 
 # Devin-style output formatters
@@ -25,13 +26,13 @@ except ImportError:
     format_tool_call = None
 
 # Import tracer here (after other imports to avoid circular issues)
+import contextlib
+
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 
-try:
+with contextlib.suppress(Exception):
     trace.set_tracer_provider(TracerProvider())
-except Exception:
-    pass
 tracer = trace.get_tracer(__name__)
 
 # Import _current_agent with try/except to avoid circular import
@@ -297,7 +298,7 @@ async def search_code_tool(ctx: RunContext, symbol: str, path: str = ".") -> str
             if _current_agent:
                 _current_agent._log_tool_call("search_code", {"symbol": symbol, "path": path})
                 _current_agent._log_tool_result("search_code", str(e), False)
-            raise ToolExecutionError(f"Error searching code: {e}", {"symbol": symbol})
+            raise ToolExecutionError(f"Error searching code: {e}", {"symbol": symbol}) from e
 
 
 async def run_background_tool(ctx: RunContext, command: str, cwd: str = ".") -> str:
@@ -319,12 +320,12 @@ async def run_background_tool(ctx: RunContext, command: str, cwd: str = ".") -> 
             if _current_agent:
                 _current_agent._log_tool_call("run_background", {"command": command})
                 _current_agent._log_tool_result("run_background", str(e), False)
-            raise ToolExecutionError(f"Error starting background job: {e}", {"command": command})
+            raise ToolExecutionError(f"Error starting background job: {e}", {"command": command}) from e
 
 
 async def list_jobs_tool(ctx: RunContext) -> str:
     """List all background jobs."""
-    with tracer.start_as_current_span("list_jobs_tool") as span:
+    with tracer.start_as_current_span("list_jobs_tool"):
         try:
             jobs = await process_manager.list_jobs()
 
@@ -354,7 +355,7 @@ async def list_jobs_tool(ctx: RunContext) -> str:
             if _current_agent:
                 _current_agent._log_tool_call("list_jobs", {})
                 _current_agent._log_tool_result("list_jobs", str(e), False)
-            raise ToolExecutionError(f"Error listing jobs: {e}")
+            raise ToolExecutionError(f"Error listing jobs: {e}") from e
 
 
 async def kill_job_tool(ctx: RunContext, pid: int) -> str:
@@ -380,7 +381,7 @@ async def kill_job_tool(ctx: RunContext, pid: int) -> str:
             if _current_agent:
                 _current_agent._log_tool_call("kill_job", {"pid": pid})
                 _current_agent._log_tool_result("kill_job", str(e), False)
-            raise ToolExecutionError(f"Error killing job: {e}", {"pid": pid})
+            raise ToolExecutionError(f"Error killing job: {e}", {"pid": pid}) from e
 
 
 async def get_job_logs_tool(ctx: RunContext, pid: int, lines: int = 50) -> str:
@@ -402,7 +403,7 @@ async def get_job_logs_tool(ctx: RunContext, pid: int, lines: int = 50) -> str:
             if _current_agent:
                 _current_agent._log_tool_call("get_job_logs", {"pid": pid})
                 _current_agent._log_tool_result("get_job_logs", str(e), False)
-            raise ToolExecutionError(f"Error getting job logs: {e}", {"pid": pid})
+            raise ToolExecutionError(f"Error getting job logs: {e}", {"pid": pid}) from e
 
 
 # === Package Manager Tools ===
@@ -443,7 +444,7 @@ async def pip_install_tool(
             if _current_agent:
                 _current_agent._log_tool_call("pip_install", {"package": package})
                 _current_agent._log_tool_result("pip_install", str(e), False)
-            raise ToolExecutionError(f"Error installing pip package: {e}", {"package": package})
+            raise ToolExecutionError(f"Error installing pip package: {e}", {"package": package}) from e
 
 
 async def npm_install_tool(ctx: RunContext, package: str, flags: str = "-D") -> str:
@@ -479,7 +480,7 @@ async def npm_install_tool(ctx: RunContext, package: str, flags: str = "-D") -> 
             if _current_agent:
                 _current_agent._log_tool_call("npm_install", {"package": package})
                 _current_agent._log_tool_result("npm_install", str(e), False)
-            raise ToolExecutionError(f"Error installing npm package: {e}", {"package": package})
+            raise ToolExecutionError(f"Error installing npm package: {e}", {"package": package}) from e
 
 
 async def cargo_install_tool(ctx: RunContext, package: str, flags: str = "") -> str:
@@ -512,7 +513,7 @@ async def cargo_install_tool(ctx: RunContext, package: str, flags: str = "") -> 
             if _current_agent:
                 _current_agent._log_tool_call("cargo_install", {"package": package})
                 _current_agent._log_tool_result("cargo_install", str(e), False)
-            raise ToolExecutionError(f"Error installing cargo package: {e}", {"package": package})
+            raise ToolExecutionError(f"Error installing cargo package: {e}", {"package": package}) from e
 
 
 async def brew_install_tool(ctx: RunContext, package: str, flags: str = "") -> str:
@@ -545,7 +546,7 @@ async def brew_install_tool(ctx: RunContext, package: str, flags: str = "") -> s
             if _current_agent:
                 _current_agent._log_tool_call("brew_install", {"package": package})
                 _current_agent._log_tool_result("brew_install", str(e), False)
-            raise ToolExecutionError(f"Error installing brew package: {e}", {"package": package})
+            raise ToolExecutionError(f"Error installing brew package: {e}", {"package": package}) from e
 
 
 async def go_install_tool(ctx: RunContext, package: str) -> str:
@@ -577,7 +578,7 @@ async def go_install_tool(ctx: RunContext, package: str) -> str:
             if _current_agent:
                 _current_agent._log_tool_call("go_install", {"package": package})
                 _current_agent._log_tool_result("go_install", str(e), False)
-            raise ToolExecutionError(f"Error installing go package: {e}", {"package": package})
+            raise ToolExecutionError(f"Error installing go package: {e}", {"package": package}) from e
 
 
 async def fetch_url_tool(ctx: RunContext, url: str, max_chars: int = 8000) -> str:
@@ -656,10 +657,10 @@ async def webfetch_tool(ctx: RunContext, url: str, max_chars: int = 8000) -> str
 
 async def verify_response_quality(ctx: RunContext, response: str) -> str:
     """Verify if the agent's response is specific and contains actual information.
-    
+
     Args:
         response: The agent's response to verify
-    
+
     Returns:
         Quality assessment with suggestions for improvement
     """
@@ -735,10 +736,10 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
 
 async def extract_article_content(ctx: RunContext, url: str) -> str:
     """Extract main article content from a URL. Removes navigation, ads, and extracts key information.
-    
+
     Args:
         url: URL to extract content from
-    
+
     Returns:
         Structured article content with headline, summary, key points, and quotes
     """
@@ -752,8 +753,6 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
 
             # Try to extract structured content using readability if available
             try:
-                import html
-
                 from readability import Document
                 doc = Document(content)
                 title = doc.title()
@@ -814,7 +813,7 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
 
 async def web_search_tool(ctx: RunContext, query: str, max_results: int = 5, fetch_content: bool = False) -> str:
     """Search the web for a query and return structured result text. Use this for ANY question about current events, games, news, people, products, or facts you do not already know. Pass a concise query string.
-    
+
     Args:
         query: Search query string
         max_results: Maximum number of results to return

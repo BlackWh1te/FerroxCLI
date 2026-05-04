@@ -1,9 +1,8 @@
-from typing import Dict, List
 
 import tiktoken
 
 
-def count_tokens(messages: List[Dict[str, str]], model: str = "gpt-4o") -> int:
+def count_tokens(messages: list[dict[str, str]], model: str = "gpt-4o") -> int:
     """Accurately count tokens in message history."""
     try:
         encoding = tiktoken.encoding_for_model(model)
@@ -14,13 +13,13 @@ def count_tokens(messages: List[Dict[str, str]], model: str = "gpt-4o") -> int:
     for message in messages:
         # Every message follows <im_start>{role/name}\n{content}<im_end>\n
         num_tokens += 4
-        for key, value in message.items():
+        for _key, value in message.items():
             num_tokens += len(encoding.encode(value))
     num_tokens += 2  # every reply is primed with <im_start>assistant
     return num_tokens
 
 
-def summarize_history(messages: List[Dict[str, str]], fallback_engine, model: str) -> str:
+def summarize_history(messages: list[dict[str, str]], fallback_engine, model: str) -> str:
     """Summarize older messages to save context."""
     if len(messages) < 10:
         return ""

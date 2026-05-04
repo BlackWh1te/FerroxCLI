@@ -32,10 +32,7 @@ def log_tool_execution(tool_name: str, result: dict):
         file_path = result.get("file_path", "unknown")
         matches = result.get("matches", [])
 
-        if matches:
-            summary = f"Found {len(matches)} match(es)"
-        else:
-            summary = "No matches found"
+        summary = f"Found {len(matches)} match(es)" if matches else "No matches found"
 
         console.print(
             Text("✓ ", style="green bold")

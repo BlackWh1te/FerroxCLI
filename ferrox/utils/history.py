@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 class HistoryManager:
@@ -8,7 +8,7 @@ class HistoryManager:
 
     def __init__(self, history_file: str = os.path.expanduser("~/.ferrox/history.json")):
         self.history_file = history_file
-        self.history: List[Dict] = []
+        self.history: list[dict] = []
         self._load()
 
     def _load(self):
@@ -24,7 +24,7 @@ class HistoryManager:
         with open(self.history_file, "w") as f:
             json.dump(self.history, f, indent=2)
 
-    def add(self, role: str, content: str, metadata: Optional[Dict] = None):
+    def add(self, role: str, content: str, metadata: Optional[dict] = None):
         msg = {"role": role, "content": content}
         if metadata:
             msg["metadata"] = metadata

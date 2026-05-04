@@ -3,7 +3,7 @@
 import math
 import os
 import time
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from rich.console import Console
 from rich.text import Text
@@ -42,7 +42,7 @@ class AnimationController:
         self._skipped = False
         self._start_time: Optional[float] = None
         self._ascii_art: Optional[str] = None
-        self._lines: Optional[List[str]] = None
+        self._lines: Optional[list[str]] = None
 
     def _check_timeout(self) -> bool:
         """Check if animation exceeded max duration."""
@@ -57,11 +57,9 @@ class AnimationController:
             return False
         if self.config._interrupted:
             return False
-        if self._check_timeout():
-            return False
-        return True
+        return not self._check_timeout()
 
-    def _prepare_art(self) -> List[str]:
+    def _prepare_art(self) -> list[str]:
         """Load and prepare ASCII art lines."""
         if self._lines is None:
             art = self._ascii_art or load_ascii_art("ascii-art.txt")
@@ -79,10 +77,7 @@ class AnimationController:
 
     def _get_palette(self):
         """Get the color palette for animation."""
-        if self.config.random_scheme:
-            scheme = random_scheme()
-        else:
-            scheme = self.config.color_scheme
+        scheme = random_scheme() if self.config.random_scheme else self.config.color_scheme
         return get_palette(scheme)
 
     def _render_frame(self, progress: float, effect_fn: Callable, palette: Optional[list] = None) -> Text:
@@ -95,7 +90,7 @@ class AnimationController:
         return effect_fn(lines, palette, eased)
 
     @staticmethod
-    def _terminal_rows(lines: List[str]) -> int:
+    def _terminal_rows(lines: list[str]) -> int:
         """
         Count how many terminal rows the art will occupy.
 

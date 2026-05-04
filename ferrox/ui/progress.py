@@ -83,7 +83,7 @@ class SpinnerProgress(ProgressIndicator):
 
     def render(self) -> Panel:
         """Render the spinner."""
-        console = Console()
+        Console()
 
         if self.is_complete:
             status = "✅ Complete"
@@ -139,7 +139,7 @@ class ProgressBarProgress(ProgressIndicator):
 
     def render(self) -> Panel:
         """Render the progress bar."""
-        console = Console()
+        Console()
 
         if self.is_complete:
             status = "✅ Complete"
@@ -220,7 +220,7 @@ class ProgressManager:
             return
 
         panels = []
-        for task_id, indicator in self.indicators.items():
+        for _task_id, indicator in self.indicators.items():
             if not indicator.is_complete and not indicator.is_cancelled:
                 panels.append(indicator.render())
 
@@ -351,7 +351,7 @@ class LiveProgressDisplay:
                 return Text("No active tasks", style="dim italic")
 
             panels = []
-            for task_id, indicator in self.manager.indicators.items():
+            for _task_id, indicator in self.manager.indicators.items():
                 if not indicator.is_complete and not indicator.is_cancelled:
                     panels.append(indicator.render())
 

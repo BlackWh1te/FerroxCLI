@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 import httpx
 
@@ -21,7 +20,7 @@ DEFAULT_MODELS = {
 }
 
 
-async def fetch_models_from_provider(provider: ProviderConfig) -> List[str]:
+async def fetch_models_from_provider(provider: ProviderConfig) -> list[str]:
     """Dynamically fetches available models from the provider's API."""
     try:
         headers = {"Content-Type": "application/json"}

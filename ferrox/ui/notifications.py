@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 
 class NotificationType(Enum):
@@ -29,7 +29,7 @@ class Notification:
     read: bool = False
     action_label: Optional[str] = None
     action_callback: Optional[Callable] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def mark_read(self) -> None:
         """Mark notification as read."""
@@ -46,7 +46,7 @@ class NotificationManager:
     """Manager for notifications."""
 
     def __init__(self, max_notifications: int = 50):
-        self.notifications: List[Notification] = []
+        self.notifications: list[Notification] = []
         self.max_notifications = max_notifications
         self.on_new_notification: Optional[Callable] = None
 
@@ -133,11 +133,11 @@ class NotificationManager:
                 return notification
         return None
 
-    def get_unread(self) -> List[Notification]:
+    def get_unread(self) -> list[Notification]:
         """Get all unread notifications."""
         return [n for n in self.notifications if not n.read]
 
-    def get_by_type(self, notification_type: NotificationType) -> List[Notification]:
+    def get_by_type(self, notification_type: NotificationType) -> list[Notification]:
         """Get notifications by type."""
         return [n for n in self.notifications if n.notification_type == notification_type]
 

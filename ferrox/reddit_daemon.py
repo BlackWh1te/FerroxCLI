@@ -5,31 +5,26 @@ and comprehensive anti-ban protections.
 """
 
 import asyncio
+import contextlib
 import random
-import signal
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
-# Platform compatibility
-from .utils.platform_compat import (
-    LockFileDaemon,
-    is_windows,
-    managed_event_loop,
-    sanitize_unicode_for_mingw,
-)
-
 # Reddit config and state
 from .reddit_config import (
     RedditConfig,
-    RedditState,
+    get_rate_limits_for_account_type,
     load_reddit_state,
     save_reddit_state,
-    get_rate_limits_for_account_type,
 )
 
 # Content safety
-from .utils.content_safety import sanitize_content, moderation_check
+# Platform compatibility
+from .utils.platform_compat import (
+    LockFileDaemon,
+    managed_event_loop,
+)
 
 # Tools (imported dynamically to avoid circular deps)
 
@@ -63,34 +58,31 @@ class RedditBotDaemon:
         print("[Reddit Bot] Starting warmup routine...")
 
         # Import tools here to avoid circular imports
-        from .agent.tools_reddit import search_subreddit_tool, get_trending_subreddits_tool
         from pydantic_ai import RunContext
+
+        from .agent.tools_reddit import get_trending_subreddits_tool, search_subreddit_tool
 
         mock_ctx = RunContext({})
 
         # 1. Search/browse a neutral subreddit
         neutral_subs = ["AskReddit", "news", "technology", "space", "science"]
-        sub = random.choice(neutral_subs)
+        sub = random.choice(neutral_subs)  # nosec: B311 — jitter delay, not cryptographic
         print(f"[Reddit Bot] Warmup: Browsing r/{sub}...")
-        try:
+        with contextlib.suppress(Exception):
             await search_subreddit_tool(mock_ctx, subreddit=sub, query="", max_results=3)
-        except Exception:
-            pass
 
         # Wait 30-60 seconds
-        wait = random.randint(30, 60)
+        wait = random.randint(30, 60)  # nosec: B311 — jitter delay, not cryptographic
         print(f"[Reddit Bot] Warmup: Waiting {wait}s...")
         await asyncio.sleep(wait)
 
         # 2. Check trending subreddits
         print("[Reddit Bot] Warmup: Checking trending subreddits...")
-        try:
+        with contextlib.suppress(Exception):
             await get_trending_subreddits_tool(mock_ctx)
-        except Exception:
-            pass
 
         # Wait another 30-60 seconds
-        wait = random.randint(30, 60)
+        wait = random.randint(30, 60)  # nosec: B311 — jitter delay, not cryptographic
         print(f"[Reddit Bot] Warmup: Waiting {wait}s...")
         await asyncio.sleep(wait)
 
@@ -168,8 +160,6 @@ class RedditBotDaemon:
             True if successful
         """
         try:
-            from .agent.tools_reddit import post_submission_tool
-            from pydantic_ai import RunContext
 
             # In a real implementation, this would use the LLM to:
             # 1. Fetch news from RSS/web
@@ -249,7 +239,7 @@ class RedditBotDaemon:
                 interval_hours = self.config.schedule.interval_hours
                 jitter_minutes = self.config.schedule.jitter_minutes
 
-                jitter = random.randint(-jitter_minutes, jitter_minutes)
+                jitter = random.randint(-jitter_minutes, jitter_minutes)  # nosec: B311 — jitter delay, not cryptographic
                 wait_seconds = (interval_hours * 3600) + (jitter * 60)
 
                 next_run = datetime.now() + timedelta(seconds=wait_seconds)

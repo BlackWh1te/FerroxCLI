@@ -8,7 +8,7 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 # Import tracer
 from opentelemetry import trace
@@ -21,10 +21,10 @@ class ProjectConfig:
     """Detected project configuration."""
     config_type: str  # "package.json", "pyproject.toml", "Cargo.toml", etc.
     path: str
-    data: Dict[str, Any] = field(default_factory=dict)
-    dependencies: List[str] = field(default_factory=list)
-    dev_dependencies: List[str] = field(default_factory=list)
-    scripts: Dict[str, str] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
+    dependencies: list[str] = field(default_factory=list)
+    dev_dependencies: list[str] = field(default_factory=list)
+    scripts: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -43,11 +43,11 @@ class ProjectContext:
     project_root: str
     project_type: str  # "monorepo", "single", "workspace"
     language: str  # "python", "javascript", "rust", "go", "java", etc.
-    configs: List[ProjectConfig] = field(default_factory=list)
-    build_systems: List[BuildSystem] = field(default_factory=list)
-    dependency_graph: Dict[str, Set[str]] = field(default_factory=dict)
-    workspace_structure: Dict[str, Any] = field(default_factory=dict)
-    important_files: List[str] = field(default_factory=list)
+    configs: list[ProjectConfig] = field(default_factory=list)
+    build_systems: list[BuildSystem] = field(default_factory=list)
+    dependency_graph: dict[str, set[str]] = field(default_factory=dict)
+    workspace_structure: dict[str, Any] = field(default_factory=dict)
+    important_files: list[str] = field(default_factory=list)
 
 
 class ProjectContextAnalyzer:
@@ -55,7 +55,7 @@ class ProjectContextAnalyzer:
 
     def __init__(self, project_root: str = "."):
         """Initialize the analyzer.
-        
+
         Args:
             project_root: Root directory of the project
         """
@@ -64,7 +64,7 @@ class ProjectContextAnalyzer:
 
     def analyze(self) -> ProjectContext:
         """Analyze the project and return context.
-        
+
         Returns:
             Complete project context
         """
@@ -152,7 +152,7 @@ class ProjectContextAnalyzer:
             for indicator in indicators:
                 if "*" in indicator:
                     # Glob pattern
-                    for path in self.project_root.glob(indicator):
+                    for _path in self.project_root.glob(indicator):
                         language_scores[language] += 1
                 else:
                     if (self.project_root / indicator).exists():
@@ -163,7 +163,7 @@ class ProjectContextAnalyzer:
 
         return max(language_scores.items(), key=lambda x: x[1])[0]
 
-    def _detect_configurations(self) -> List[ProjectConfig]:
+    def _detect_configurations(self) -> list[ProjectConfig]:
         """Detect all project configuration files."""
         configs = []
 
@@ -254,7 +254,7 @@ class ProjectContextAnalyzer:
         except Exception:
             return None
 
-    def _detect_build_systems(self, configs: List[ProjectConfig]) -> List[BuildSystem]:
+    def _detect_build_systems(self, configs: list[ProjectConfig]) -> list[BuildSystem]:
         """Detect build systems from configurations."""
         build_systems = []
 
@@ -318,7 +318,7 @@ class ProjectContextAnalyzer:
 
         return build_systems
 
-    def _build_dependency_graph(self, configs: List[ProjectConfig]) -> Dict[str, Set[str]]:
+    def _build_dependency_graph(self, configs: list[ProjectConfig]) -> dict[str, set[str]]:
         """Build a dependency graph from configurations."""
         graph = defaultdict(set)
 
@@ -329,7 +329,7 @@ class ProjectContextAnalyzer:
 
         return dict(graph)
 
-    def _analyze_workspace_structure(self) -> Dict[str, Any]:
+    def _analyze_workspace_structure(self) -> dict[str, Any]:
         """Analyze workspace/monorepo structure."""
         structure = {
             "type": "flat",
@@ -351,7 +351,7 @@ class ProjectContextAnalyzer:
 
         return structure
 
-    def _identify_important_files(self) -> List[str]:
+    def _identify_important_files(self) -> list[str]:
         """Identify important project files."""
         important_patterns = [
             "README*",
@@ -428,7 +428,7 @@ class ProjectContextAnalyzer:
 
         return summary
 
-    def find_dependency_cycles(self) -> List[List[str]]:
+    def find_dependency_cycles(self) -> list[list[str]]:
         """Find circular dependencies in the dependency graph."""
         if not self.context:
             return []
@@ -438,7 +438,7 @@ class ProjectContextAnalyzer:
         visited = set()
         rec_stack = set()
 
-        def dfs(node: str, path: List[str]) -> None:
+        def dfs(node: str, path: list[str]) -> None:
             if node in rec_stack:
                 # Found a cycle
                 cycle_start = path.index(node)
@@ -464,10 +464,10 @@ class ProjectContextAnalyzer:
 
     def get_build_command(self, system_name: Optional[str] = None) -> str:
         """Get the appropriate build command.
-        
+
         Args:
             system_name: Specific build system to use (auto-detect if None)
-        
+
         Returns:
             Build command string
         """
@@ -490,10 +490,10 @@ class ProjectContextAnalyzer:
 
     def get_test_command(self, system_name: Optional[str] = None) -> str:
         """Get the appropriate test command.
-        
+
         Args:
             system_name: Specific build system to use (auto-detect if None)
-        
+
         Returns:
             Test command string
         """

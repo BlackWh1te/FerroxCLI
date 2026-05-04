@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
@@ -12,9 +12,9 @@ from pydantic import BaseModel, Field, field_validator
 load_dotenv()
 
 
-from .providers.config import ProviderConfig, SubagentConfig
-from .reddit_config import RedditConfig
-from .social_config import SocialConfig
+from .providers.config import ProviderConfig, SubagentConfig  # noqa: E402
+from .reddit_config import RedditConfig  # noqa: E402
+from .social_config import SocialConfig  # noqa: E402
 
 
 class McpServerConfig(BaseModel):
@@ -22,8 +22,8 @@ class McpServerConfig(BaseModel):
 
     name: str = Field(description="Logical name for this MCP server")
     command: str = Field(description="Executable command to start the server (e.g. 'npx')")
-    args: List[str] = Field(default_factory=list, description="Arguments passed to the command")
-    env: Optional[Dict[str, str]] = Field(default=None, description="Optional environment variables")
+    args: list[str] = Field(default_factory=list, description="Arguments passed to the command")
+    env: Optional[dict[str, str]] = Field(default=None, description="Optional environment variables")
     timeout: float = Field(default=30, description="Server startup timeout in seconds")
     enabled: bool = Field(default=True, description="Whether this server is enabled")
 
@@ -32,7 +32,7 @@ class FerroxConfig(BaseModel):
     """Ferrox configuration with multi-provider support"""
 
     version: str = Field(default="1.2.0", description="Config version")
-    providers: List[ProviderConfig] = Field(default_factory=list, description="List of providers")
+    providers: list[ProviderConfig] = Field(default_factory=list, description="List of providers")
     active_provider_id: Optional[str] = Field(default=None, description="Currently active provider")
     timeout: int = Field(default=30, description="Request timeout in seconds")
     max_tokens: int = Field(default=4096, description="Maximum tokens to generate")
@@ -46,7 +46,7 @@ class FerroxConfig(BaseModel):
     reddit: Optional[RedditConfig] = Field(
         default=None, description="Reddit Bot configuration"
     )
-    mcp_servers: List[McpServerConfig] = Field(
+    mcp_servers: list[McpServerConfig] = Field(
         default_factory=list, description="External MCP servers (Playwright, Fetch, etc.)"
     )
 
@@ -157,15 +157,15 @@ def load_config() -> Optional[FerroxConfig]:
         return FerroxConfig(**data)
 
     except json.JSONDecodeError as e:
-        raise ConfigurationError(f"Invalid JSON in config file: {e}", {"file": str(CONFIG_FILE)})
+        raise ConfigurationError(f"Invalid JSON in config file: {e}", {"file": str(CONFIG_FILE)}) from e
     except ValidationError as e:
-        raise ConfigurationError(f"Config validation failed: {e.message}", {"details": e.details})
+        raise ConfigurationError(f"Config validation failed: {e.message}", {"details": e.details}) from e
     except PermissionError as e:
         raise ConfigurationError(
             f"Permission denied reading config: {e}", {"file": str(CONFIG_FILE)}
-        )
+        ) from e
     except Exception as e:
-        raise ConfigurationError(f"Error loading config: {e}", {"file": str(CONFIG_FILE)})
+        raise ConfigurationError(f"Error loading config: {e}", {"file": str(CONFIG_FILE)}) from e
 
 
 def save_config(config: FerroxConfig) -> None:

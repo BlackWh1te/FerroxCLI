@@ -37,7 +37,7 @@ async def git_status_tool(ctx: RunContext, path: str = ".") -> str:
         span.set_attribute("path", path)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -109,7 +109,7 @@ async def git_diff_tool(ctx: RunContext, path: str = ".", cached: bool = False) 
         span.set_attribute("cached", cached)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -238,7 +238,7 @@ async def git_branch_tool(ctx: RunContext, show_current: bool = True) -> str:
         span.set_attribute("show_current", show_current)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -365,7 +365,7 @@ async def git_log_tool(ctx: RunContext, max_count: int = 10, path: str = ".") ->
         span.set_attribute("path", path)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 
@@ -496,7 +496,7 @@ async def git_blame_tool(ctx: RunContext, path: str, line: Optional[int] = None)
         span.set_attribute("line", line)
 
         try:
-            mode = (
+            (
                 ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
             )
 

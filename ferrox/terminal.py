@@ -1,11 +1,12 @@
 """Devin-style terminal UI for Ferrox"""
 
+import contextlib
 import os
 import platform
 import shutil
 import subprocess
 import tempfile
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.styles import Style
@@ -146,8 +147,8 @@ class TerminalState:
         self.on_submit = on_submit
         self.slash_menu = SlashCommandMenu()
         self.permission_prompt = PermissionPrompt()
-        self.chat_history: List[Dict[str, str]] = []
-        self.tool_outputs: List[str] = []
+        self.chat_history: list[dict[str, str]] = []
+        self.tool_outputs: list[str] = []
         self.input_buffer = Buffer()
         if model_name is None:
             from .config import get_default_config
@@ -167,10 +168,10 @@ class TerminalState:
         self.chat_history.clear()
         self.tool_outputs.clear()
 
-    def get_top_bar_text(self) -> List:
+    def get_top_bar_text(self) -> list:
         mode = self.mode_manager.current_mode
         mode_colors = {"NORMAL": "#00ff00", "PLAN": "#ffff00", "BYPASS": "#ff0000"}
-        color = mode_colors.get(mode.value, "#ffffff")
+        mode_colors.get(mode.value, "#ffffff")
 
         mode_text = f" {mode.value} "
         if mode.value == "NORMAL":
@@ -188,7 +189,7 @@ class TerminalState:
             (f"class:top-bar.mode-{mode.value.lower()}", mode_text),
         ]
 
-    def get_status_bar_text(self) -> List:
+    def get_status_bar_text(self) -> list:
         percent = int((self.context_tokens / self.max_tokens) * 100)
         return [
             ("class:status.model", self.model_name),
@@ -199,7 +200,7 @@ class TerminalState:
             ),
         ]
 
-    def get_output_text(self) -> List:
+    def get_output_text(self) -> list:
         lines = []
 
         for msg in self.chat_history:
@@ -228,13 +229,13 @@ class TerminalState:
 
         return lines
 
-    def get_slash_menu_text(self) -> List:
+    def get_slash_menu_text(self) -> list:
         if not self.slash_menu.visible:
             return []
 
         lines = [("class:slash-menu.title", "Commands"), ("", "\n")]
 
-        for idx, (cmd, desc, help_text) in enumerate(self.slash_menu.filtered_commands):
+        for idx, (cmd, _desc, help_text) in enumerate(self.slash_menu.filtered_commands):
             prefix = "» " if idx == self.slash_menu.selected_index else "  "
             style = (
                 "class:slash-menu.selected"
@@ -392,10 +393,8 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
         console.print(f"[red]Error: {e}[/red]")
         return None
     finally:
-        try:
+        with contextlib.suppress(OSError, FileNotFoundError, PermissionError):
             os.unlink(temp_path)
-        except (OSError, FileNotFoundError, PermissionError):
-            pass
 
 
 def _command_exists(cmd: str) -> bool:

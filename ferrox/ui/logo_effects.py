@@ -2,7 +2,7 @@
 
 import math
 import random
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional
 
 from rich.text import Text
 
@@ -10,7 +10,7 @@ from .logo_config import ColorScheme
 
 # ── Color Palette Definitions ──────────────────────────────────────────────
 
-PALETTES: dict[ColorScheme, List[str]] = {
+PALETTES: dict[ColorScheme, list[str]] = {
     ColorScheme.FIRE: [
         "#ff0000", "#ff1a00", "#ff3300", "#ff4d00", "#ff6600",
         "#ff8000", "#ff9900", "#ffb300", "#ffcc00", "#ffe600", "#ffff00",
@@ -76,25 +76,25 @@ def bounce_out(t: float) -> float:
 
 def flicker(t: float, intensity: float = 0.3) -> float:
     """Add random flicker to timing."""
-    noise = random.uniform(-intensity, intensity)
+    noise = random.uniform(-intensity, intensity)  # nosec: B311 — jitter delay, not cryptographic
     return max(0.0, min(1.0, t + noise))
 
 
 # ── Color Utilities ────────────────────────────────────────────────────────
 
-def get_palette(scheme: ColorScheme) -> List[str]:
+def get_palette(scheme: ColorScheme) -> list[str]:
     """Get color palette for a scheme."""
     return PALETTES.get(scheme, PALETTES[ColorScheme.FIRE])
 
 
 def random_scheme() -> ColorScheme:
     """Pick a random color scheme."""
-    return random.choice(list(ColorScheme))
+    return random.choice(list(ColorScheme))  # nosec: B311 — jitter delay, not cryptographic
 
 
 def lerp_color(c1: str, c2: str, t: float) -> str:
     """Linear interpolation between two hex colors."""
-    def hex_to_rgb(h: str) -> Tuple[int, int, int]:
+    def hex_to_rgb(h: str) -> tuple[int, int, int]:
         h = h.lstrip("#")
         return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
@@ -111,7 +111,7 @@ def lerp_color(c1: str, c2: str, t: float) -> str:
     return rgb_to_hex(r, g, b)
 
 
-def cycle_palette(palette: List[str], offset: float) -> List[str]:
+def cycle_palette(palette: list[str], offset: float) -> list[str]:
     """Rotate palette by offset amount (0.0-1.0)."""
     if not palette:
         return palette
@@ -122,12 +122,12 @@ def cycle_palette(palette: List[str], offset: float) -> List[str]:
 
 # ── Text Manipulation ──────────────────────────────────────────────────────
 
-def split_lines(text: str) -> List[str]:
+def split_lines(text: str) -> list[str]:
     """Split text into lines, preserving empty lines."""
     return text.split("\n")
 
 
-def get_line_width(lines: List[str]) -> int:
+def get_line_width(lines: list[str]) -> int:
     """Get maximum line width."""
     if not lines:
         return 0
@@ -140,14 +140,14 @@ def center_line(line: str, width: int, fill: str = " ") -> str:
     return fill * pad + line + fill * (width - len(line) - pad)
 
 
-def pad_lines(lines: List[str], width: int) -> List[str]:
+def pad_lines(lines: list[str], width: int) -> list[str]:
     """Pad all lines to same width."""
     return [line.ljust(width) for line in lines]
 
 
 # ── Effect Generators ─────────────────────────────────────────────────────
 
-def effect_typewriter(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_typewriter(lines: list[str], palette: list[str], progress: float) -> Text:
     """Typewriter effect: characters appear progressively."""
     text = Text()
     total_chars = sum(len(line) + 1 for line in lines)
@@ -155,7 +155,7 @@ def effect_typewriter(lines: List[str], palette: List[str], progress: float) -> 
 
     shown = 0
     for line in lines:
-        for i, ch in enumerate(line):
+        for _i, ch in enumerate(line):
             if shown < chars_to_show:
                 color_idx = min(int((shown / max(1, total_chars)) * len(palette)), len(palette) - 1)
                 style = palette[color_idx] if ch.strip() else ""
@@ -169,7 +169,7 @@ def effect_typewriter(lines: List[str], palette: List[str], progress: float) -> 
     return text
 
 
-def effect_reveal_lines(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_reveal_lines(lines: list[str], palette: list[str], progress: float) -> Text:
     """Reveal lines from top to bottom."""
     text = Text()
     num_lines = len(lines)
@@ -186,7 +186,7 @@ def effect_reveal_lines(lines: List[str], palette: List[str], progress: float) -
     return text
 
 
-def effect_fade_in(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_fade_in(lines: list[str], palette: list[str], progress: float) -> Text:
     """Fade in all lines simultaneously."""
     text = Text()
     intensity = int(progress * len(palette))
@@ -199,7 +199,7 @@ def effect_fade_in(lines: List[str], palette: List[str], progress: float) -> Tex
     return text
 
 
-def effect_scan(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_scan(lines: list[str], palette: list[str], progress: float) -> Text:
     """Scanning beam effect left to right."""
     text = Text()
     width = get_line_width(lines)
@@ -217,7 +217,7 @@ def effect_scan(lines: List[str], palette: List[str], progress: float) -> Text:
     return text
 
 
-def effect_glow_pulse(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_glow_pulse(lines: list[str], palette: list[str], progress: float) -> Text:
     """Pulsing glow effect."""
     text = Text()
     # Use sine wave for pulse
@@ -231,7 +231,7 @@ def effect_glow_pulse(lines: List[str], palette: List[str], progress: float) -> 
     return text
 
 
-def effect_rainbow_shift(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_rainbow_shift(lines: list[str], palette: list[str], progress: float) -> Text:
     """Color cycling across lines."""
     text = Text()
     shifted = cycle_palette(palette, progress)
@@ -245,18 +245,18 @@ def effect_rainbow_shift(lines: List[str], palette: List[str], progress: float) 
     return text
 
 
-def effect_sparkle(lines: List[str], palette: List[str], progress: float) -> Text:
+def effect_sparkle(lines: list[str], palette: list[str], progress: float) -> Text:
     """Random sparkle effect."""
     text = Text()
     total_chars = sum(len(line) for line in lines)
     sparkles = int(progress * total_chars * 1.5)
-    sparkle_set = set(random.sample(range(total_chars), min(sparkles, total_chars)))
+    sparkle_set = set(random.sample(range(total_chars), min(sparkles, total_chars)))  # nosec: B311 — jitter delay, not cryptographic
 
     idx = 0
     for line in lines:
         for ch in line:
             if ch.strip() and idx in sparkle_set:
-                color_idx = random.randint(0, len(palette) - 1)
+                color_idx = random.randint(0, len(palette) - 1)  # nosec: B311 — jitter delay, not cryptographic
                 text.append(ch, style=palette[color_idx])
             elif ch.strip():
                 text.append(ch, style=palette[0])
@@ -270,7 +270,7 @@ def effect_sparkle(lines: List[str], palette: List[str], progress: float) -> Tex
 
 # ── Effect Registry ────────────────────────────────────────────────────────
 
-EFFECTS: List[Tuple[str, Callable]] = [
+EFFECTS: list[tuple[str, Callable]] = [
     ("typewriter", effect_typewriter),
     ("reveal", effect_reveal_lines),
     ("fade", effect_fade_in),
@@ -289,11 +289,11 @@ def get_effect(name: str) -> Optional[Callable]:
     return None
 
 
-def random_effect() -> Tuple[str, Callable]:
+def random_effect() -> tuple[str, Callable]:
     """Pick a random effect."""
-    return random.choice(EFFECTS)
+    return random.choice(EFFECTS)  # nosec: B311 — jitter delay, not cryptographic
 
 
-def list_effects() -> List[str]:
+def list_effects() -> list[str]:
     """List all available effect names."""
     return [name for name, _ in EFFECTS]

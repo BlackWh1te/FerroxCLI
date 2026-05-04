@@ -8,7 +8,7 @@ import asyncio
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pydantic_ai import RunContext
 
@@ -47,7 +47,7 @@ class TokenBucket:
 
     def __init__(self, rate: float, burst: int):
         """Initialize bucket.
-        
+
         Args:
             rate: Tokens per second
             burst: Maximum burst size
@@ -92,7 +92,7 @@ def _get_twikit_client(config: SocialConfig):
         raise ToolExecutionError(
             "twikit not installed. Run: pip install twikit",
             {"action": "get_client"}
-        )
+        ) from None
 
     client = Client()
 
@@ -102,7 +102,7 @@ def _get_twikit_client(config: SocialConfig):
         try:
             client.load_cookies(str(cookie_path))
             return client
-        except Exception:
+        except Exception:  # nosec: B110 — intentional suppression
             pass  # Corrupt or incompatible format — try next source
 
     # ── Try browser-login cookie file ──
@@ -128,13 +128,13 @@ def _get_twikit_client(config: SocialConfig):
             if cookie_dict:
                 client.set_cookies(cookie_dict)
                 return client
-        except Exception:
+        except Exception:  # nosec: B110 — intentional suppression
             pass
 
     return client
 
 
-def validate_x_session() -> Optional[Dict[str, Any]]:
+def validate_x_session() -> Optional[dict[str, Any]]:
     """Validate the current X session.
 
     Checks if cookies exist in the format twikit expects.
@@ -176,7 +176,7 @@ def validate_x_session() -> Optional[Dict[str, Any]]:
         from twikit import Client
         client = Client()
         client.set_cookies(cookie_dict)
-    except Exception:
+    except Exception:  # nosec: B110 — intentional suppression
         pass  # twikit may have compatibility issues, but cookies are present
 
     # Return placeholder info — actual user data will come from tool calls
@@ -207,7 +207,7 @@ def _log_tool_result(name: str, result: str, success: bool):
 
 async def check_account_health_tool(ctx: RunContext) -> str:
     """Check X account health and determine account type and limits.
-    
+
     Returns:
         Account status including type, limits, and recommendations
     """
@@ -334,12 +334,12 @@ async def search_tweets_tool(
     search_type: str = "Latest"
 ) -> str:
     """Search for tweets on X.
-    
+
     Args:
         query: Search query string
         max_results: Maximum results to return (max 50)
         search_type: "Top", "Latest", "Photos", "Videos"
-        
+
     Returns:
         Search results with tweet details
     """
@@ -395,12 +395,12 @@ async def post_tweet_tool(
     dry_run: bool = False,
 ) -> str:
     """Post a tweet to X.
-    
+
     Args:
         text: Tweet text content
         reply_to_id: Optional tweet ID to reply to
         dry_run: If True, preview only without posting
-        
+
     Returns:
         Result of posting attempt
     """
@@ -516,12 +516,12 @@ async def post_tweet_tool(
         return f"Error posting tweet: {e}"
 
 
-async def post_thread_tool(ctx: RunContext, texts: List[str]) -> str:
+async def post_thread_tool(ctx: RunContext, texts: list[str]) -> str:
     """Post a thread (series of connected tweets).
-    
+
     Args:
         texts: List of tweet texts (each will be a tweet in the thread)
-        
+
     Returns:
         Result of posting attempt
     """
@@ -590,10 +590,10 @@ async def post_thread_tool(ctx: RunContext, texts: List[str]) -> str:
 
 async def get_recent_posts_tool(ctx: RunContext, count: int = 20) -> str:
     """Get recent posts from the bot's account.
-    
+
     Args:
         count: Number of recent posts to retrieve
-        
+
     Returns:
         List of recent tweets
     """
@@ -630,10 +630,10 @@ async def get_recent_posts_tool(ctx: RunContext, count: int = 20) -> str:
 
 async def check_visibility_tool(ctx: RunContext, tweet_id: str) -> str:
     """Check if a tweet is visible (not shadowbanned).
-    
+
     Args:
         tweet_id: Tweet ID to check
-        
+
     Returns:
         Visibility check result
     """
@@ -652,7 +652,7 @@ async def check_visibility_tool(ctx: RunContext, tweet_id: str) -> str:
             if tweet:
                 _log_tool_result("check_visibility", "Tweet is visible", True)
                 return f"✅ Tweet {tweet_id} is visible and indexed."
-        except Exception:
+        except Exception:  # nosec: B110 — intentional suppression
             pass
 
         # If not found directly, search for text
@@ -667,7 +667,7 @@ async def check_visibility_tool(ctx: RunContext, tweet_id: str) -> str:
 
 async def get_trends_tool(ctx: RunContext) -> str:
     """Get current trending topics.
-    
+
     Returns:
         List of trending topics
     """
@@ -698,10 +698,10 @@ async def get_trends_tool(ctx: RunContext) -> str:
 
 async def get_mentions_tool(ctx: RunContext, count: int = 20) -> str:
     """Get mentions and notifications.
-    
+
     Args:
         count: Number of mentions to retrieve
-        
+
     Returns:
         List of mentions
     """
@@ -733,10 +733,10 @@ async def get_mentions_tool(ctx: RunContext, count: int = 20) -> str:
 
 async def like_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
     """Like a tweet.
-    
+
     Args:
         tweet_id: Tweet ID to like
-        
+
     Returns:
         Result of like operation
     """
@@ -770,10 +770,10 @@ async def like_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
 
 async def retweet_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
     """Retweet a tweet.
-    
+
     Args:
         tweet_id: Tweet ID to retweet
-        
+
     Returns:
         Result of retweet operation
     """
@@ -807,10 +807,10 @@ async def retweet_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
 
 async def delete_tweet_tool(ctx: RunContext, tweet_id: str) -> str:
     """Delete a tweet (undo last post).
-    
+
     Args:
         tweet_id: Tweet ID to delete
-        
+
     Returns:
         Result of delete operation
     """

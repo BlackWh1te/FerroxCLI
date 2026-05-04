@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 import os
 import shutil
-from typing import Any, Dict
+from typing import Any
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -157,7 +157,7 @@ def _get_git_branch() -> str:
         )
         if result.returncode == 0:
             return result.stdout.strip()
-    except Exception:
+    except Exception:  # nosec: B110 — intentional suppression
         pass
     return "no repo"
 
@@ -175,7 +175,7 @@ def _get_mode_style_class(mode_name: str) -> str:
     return f"class:status-mode-{mode_name.lower()}"
 
 
-def get_status_footer_text(mode_manager, config, session_state: Dict[str, Any]) -> Any:
+def get_status_footer_text(mode_manager, config, session_state: dict[str, Any]) -> Any:
     """Generates a rich Devin-style bottom status bar."""
     # Mode block
     mode = mode_manager.current_mode
@@ -199,7 +199,7 @@ def get_status_footer_text(mode_manager, config, session_state: Dict[str, Any]) 
     # Tokens
     tokens_used = session_state.get("tokens_used", 0)
     tokens_limit = session_state.get("tokens_limit", 200_000)
-    tokens_pct = min(100, int((tokens_used / tokens_limit) * 100)) if tokens_limit else 0
+    min(100, int((tokens_used / tokens_limit) * 100)) if tokens_limit else 0
 
     result = [
         ("class:status-separator", " ┃ "),

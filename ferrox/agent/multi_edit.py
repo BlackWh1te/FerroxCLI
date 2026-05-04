@@ -8,7 +8,7 @@ import difflib
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 # Import tracer
 from opentelemetry import trace
@@ -36,10 +36,10 @@ class FileEdit:
 class EditTransaction:
     """A transaction of multiple file edits."""
     id: str
-    edits: List[FileEdit] = field(default_factory=list)
+    edits: list[FileEdit] = field(default_factory=list)
     status: str = "pending"  # pending, applied, rolled_back
     created_at: str = field(default_factory=lambda: datetime.now().isoformat)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class MultiFileEditor:
@@ -48,17 +48,17 @@ class MultiFileEditor:
     def __init__(self):
         """Initialize the multi-file editor."""
         self.current_transaction: Optional[EditTransaction] = None
-        self.transaction_history: List[EditTransaction] = []
+        self.transaction_history: list[EditTransaction] = []
         self.backup_dir = Path.home() / ".ferrox" / "backups"
         self.backup_dir.mkdir(parents=True, exist_ok=True)
 
-    def begin_transaction(self, transaction_id: str, metadata: Optional[Dict[str, Any]] = None) -> str:
+    def begin_transaction(self, transaction_id: str, metadata: Optional[dict[str, Any]] = None) -> str:
         """Begin a new transaction.
-        
+
         Args:
             transaction_id: Unique identifier for the transaction
             metadata: Optional metadata about the transaction
-        
+
         Returns:
             Transaction ID
         """
@@ -77,7 +77,7 @@ class MultiFileEditor:
 
     def add_edit(self, path: str, new_content: str, operation: str = "update") -> None:
         """Add an edit to the current transaction.
-        
+
         Args:
             path: File path
             new_content: New file content
@@ -105,9 +105,9 @@ class MultiFileEditor:
 
             self.current_transaction.edits.append(edit)
 
-    def preview_transaction(self) -> Dict[str, Any]:
+    def preview_transaction(self) -> dict[str, Any]:
         """Preview the current transaction with diffs.
-        
+
         Returns:
             Dictionary with diff information for each edit
         """
@@ -150,12 +150,12 @@ class MultiFileEditor:
 
         return "".join(diff)
 
-    def commit_transaction(self, create_backup: bool = True) -> Dict[str, Any]:
+    def commit_transaction(self, create_backup: bool = True) -> dict[str, Any]:
         """Apply the current transaction atomically.
-        
+
         Args:
             create_backup: Whether to create backups before applying changes
-        
+
         Returns:
             Result dictionary with status and details
         """
@@ -235,9 +235,9 @@ class MultiFileEditor:
             with open(path, 'w', encoding='utf-8') as f:
                 f.write(edit.new_content)
 
-    def rollback_transaction(self) -> Dict[str, Any]:
+    def rollback_transaction(self) -> dict[str, Any]:
         """Rollback the current transaction.
-        
+
         Returns:
             Result dictionary
         """
@@ -301,17 +301,17 @@ class MultiFileEditor:
                     member_path.resolve().relative_to(self.backup_dir.resolve())
                     safe_members.append(member)
                 except ValueError:
-                    raise ValueError(f"Invalid tar entry: {member.name} attempts path traversal")
+                    raise ValueError(f"Invalid tar entry: {member.name} attempts path traversal") from None
             tar.extractall(self.backup_dir, members=safe_members)  # nosec: B202
 
-    def extract_function(self, source_file: str, function_name: str, target_file: str) -> Dict[str, Any]:
+    def extract_function(self, source_file: str, function_name: str, target_file: str) -> dict[str, Any]:
         """Extract a function to a new file and update imports.
-        
+
         Args:
             source_file: Source file path
             function_name: Function name to extract
             target_file: Target file path for extracted function
-        
+
         Returns:
             Result dictionary
         """
@@ -368,15 +368,15 @@ class MultiFileEditor:
 
             return result
 
-    def rename_symbol(self, file_path: str, old_name: str, new_name: str, scope: str = "file") -> Dict[str, Any]:
+    def rename_symbol(self, file_path: str, old_name: str, new_name: str, scope: str = "file") -> dict[str, Any]:
         """Rename a symbol (function, variable, class) across files.
-        
+
         Args:
             file_path: File containing the symbol
             old_name: Current symbol name
             new_name: New symbol name
             scope: Scope of rename ("file" or "project")
-        
+
         Returns:
             Result dictionary
         """
@@ -430,14 +430,14 @@ class MultiFileEditor:
 
             return result
 
-    def move_file(self, old_path: str, new_path: str, update_imports: bool = True) -> Dict[str, Any]:
+    def move_file(self, old_path: str, new_path: str, update_imports: bool = True) -> dict[str, Any]:
         """Move a file to a new location and update imports.
-        
+
         Args:
             old_path: Current file path
             new_path: New file path
             update_imports: Whether to update imports in other files
-        
+
         Returns:
             Result dictionary
         """
@@ -485,12 +485,12 @@ class MultiFileEditor:
 
             return result
 
-    def get_transaction_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_transaction_history(self, limit: int = 10) -> list[dict[str, Any]]:
         """Get transaction history.
-        
+
         Args:
             limit: Maximum number of transactions to return
-        
+
         Returns:
             List of transaction summaries
         """

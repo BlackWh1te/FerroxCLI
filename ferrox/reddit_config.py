@@ -5,7 +5,8 @@ Provides Pydantic models for Reddit credentials, schedule, rate limits, and bot 
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Literal
+from typing import Literal, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -50,10 +51,13 @@ class NightMode(BaseModel):
     @classmethod
     def validate_hours(cls, v: int, info) -> int:
         """Ensure end hour is after start hour."""
-        if hasattr(info, "data") and info.data.get("start_hour") is not None:
-            if v <= info.data.get("start_hour"):
-                # If end is before start, assume next day (valid for night mode)
-                pass
+        if (
+            hasattr(info, "data")
+            and info.data.get("start_hour") is not None
+            and v <= info.data.get("start_hour")
+        ):
+            # If end is before start, assume next day (valid for night mode)
+            pass
         return v
 
 
@@ -69,7 +73,7 @@ class PostingSchedule(BaseModel):
 class ContentPreferences(BaseModel):
     """Content generation preferences."""
 
-    subreddits: List[str] = Field(default_factory=list, description="Target subreddit names")
+    subreddits: list[str] = Field(default_factory=list, description="Target subreddit names")
     tone: Literal["professional", "casual", "witty", "neutral"] = Field(default="casual")
     max_links_per_post: int = Field(default=1, ge=0, le=5)
     include_media: bool = Field(default=False)
@@ -110,7 +114,7 @@ class RedditState(BaseModel):
     last_reset_date: Optional[datetime] = Field(default=None)
 
     # Recent posts for deduplication
-    recent_post_hashes: List[dict] = Field(default_factory=list)
+    recent_post_hashes: list[dict] = Field(default_factory=list)
 
     # Karma tracking
     link_karma: int = Field(default=0)
@@ -123,9 +127,9 @@ class RedditState(BaseModel):
     auth_mode: Literal["praw", "browser", "none"] = Field(default="none")
 
     # Recent submissions / comments
-    recent_submissions: List[dict] = Field(default_factory=list)
-    recent_comments: List[dict] = Field(default_factory=list)
-    pending_replies: List[dict] = Field(default_factory=list)
+    recent_submissions: list[dict] = Field(default_factory=list)
+    recent_comments: list[dict] = Field(default_factory=list)
+    pending_replies: list[dict] = Field(default_factory=list)
 
     # Daemon status
     daemon_running: bool = Field(default=False)
@@ -173,7 +177,7 @@ class RedditConfig(BaseModel):
     )
 
     # News sources for content
-    news_sources: List[str] = Field(default_factory=lambda: [
+    news_sources: list[str] = Field(default_factory=lambda: [
         "https://news.ycombinator.com/rss",
         "https://techcrunch.com/feed/",
     ])
@@ -244,7 +248,7 @@ def load_reddit_state() -> RedditState:
 
     try:
         import json
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
+        with open(STATE_FILE, encoding="utf-8") as f:
             data = json.load(f)
         return RedditState(**data)
     except Exception:

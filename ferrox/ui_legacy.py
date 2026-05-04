@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
@@ -60,7 +60,9 @@ devin_style = Style.from_dict(
 )
 
 
-from .utils.git import get_git_branch
+import contextlib  # noqa: E402
+
+from .utils.git import get_git_branch  # noqa: E402
 
 
 def get_status_footer_text(config, session_state):
@@ -122,15 +124,15 @@ class FerroxUI:
         self.mode_manager = mode_manager
         self.permission_engine = permission_engine
         self.on_submit_callback = on_submit_callback
-        self.chat_history: List[str] = []
+        self.chat_history: list[str] = []
         self.input_buffer = Buffer()
         self.application: Optional[Application] = None
 
-    def get_top_toolbar_text(self) -> List:
+    def get_top_toolbar_text(self) -> list:
         """Generate top toolbar text with mode indicator"""
         mode = self.mode_manager.current_mode
         mode_colors = {"NORMAL": "#00ff00", "PLAN": "#ffff00", "BYPASS": "#ff0000"}
-        mode_color = mode_colors.get(mode.value, "#ffffff")
+        mode_colors.get(mode.value, "#ffffff")
 
         mode_text = f" {mode.value} "
         if mode.value == "NORMAL":
@@ -147,7 +149,7 @@ class FerroxUI:
             (f"class:mode-{mode.value.lower()}", mode_text),
         ]
 
-    def get_status_bar_text(self) -> List:
+    def get_status_bar_text(self) -> list:
         """Generate status bar text"""
         try:
             config = get_default_config()
@@ -166,7 +168,7 @@ class FerroxUI:
             ("class:token-usage", f"Context: {tokens_used} / {tokens_max} tokens"),
         ]
 
-    def get_chat_output_text(self) -> List:
+    def get_chat_output_text(self) -> list:
         """Generate chat history output"""
         if not self.chat_history:
             return [("", "No messages yet. Start chatting!")]
@@ -183,7 +185,7 @@ class FerroxUI:
         @kb.add("s-tab")
         def handle_shift_tab(event):
             """Shift+Tab: Cycle modes"""
-            new_mode = self.mode_manager.cycle_mode()
+            self.mode_manager.cycle_mode()
             self.update_display()
 
         @kb.add("c-g")
@@ -346,10 +348,8 @@ def open_external_editor(initial_text: str = "") -> Optional[str]:
         console.print(f"[red]Error opening editor: {e}[/red]")
         return None
     finally:
-        try:
+        with contextlib.suppress(Exception):
             os.unlink(temp_path)
-        except Exception:
-            pass
 
 
 def create_keybindings(mode_manager, on_cycle_callback: Optional[Callable] = None) -> KeyBindings:

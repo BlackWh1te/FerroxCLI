@@ -25,26 +25,25 @@ def is_mingw() -> bool:
 
 def safe_path(path: str) -> str:
     """Escape path for use in shell commands on Windows with spaces.
-    
+
     Args:
         path: File path that may contain spaces
-        
+
     Returns:
         Escaped path string
     """
-    if is_windows():
+    if is_windows() and " " in path:
         # Wrap in quotes if contains spaces
-        if " " in path:
-            return f'"{path}"'
+        return f'"{path}"'
     return path
 
 
 def safe_filename(filename: str) -> str:
     """Make a filename safe for cross-platform use.
-    
+
     Args:
         filename: Original filename
-        
+
     Returns:
         Safe filename without problematic characters
     """
@@ -63,7 +62,7 @@ def safe_filename(filename: str) -> str:
 
 class LockFileDaemon:
     """Cross-platform daemon control using lockfiles (works on Windows/MINGW).
-    
+
     Unlike Unix signals which don't work properly on Windows/MINGW,
     this uses lockfiles for IPC.
     """
@@ -151,13 +150,13 @@ class LockFileDaemon:
             try:
                 if path.exists():
                     path.unlink()
-            except Exception:
+            except Exception:  # nosec: B110 — intentional suppression
                 pass
 
 
 def get_asyncio_event_loop_policy():
     """Get the appropriate event loop policy for the platform.
-    
+
     On Windows, ProactorEventLoop is needed for subprocess support.
     """
     if is_windows():
@@ -168,7 +167,7 @@ def get_asyncio_event_loop_policy():
 @contextmanager
 def managed_event_loop():
     """Context manager for properly configured event loop.
-    
+
     Usage:
         with managed_event_loop() as loop:
             # Use loop
@@ -195,17 +194,17 @@ def managed_event_loop():
 
             loop.run_until_complete(loop.shutdown_asyncgens())
             loop.close()
-        except Exception:
+        except Exception:  # nosec: B110 — intentional suppression
             pass
 
 
 def run_subprocess_windows(cmd: list, **kwargs) -> subprocess.Popen:
     """Run subprocess with Windows-specific settings.
-    
+
     Args:
         cmd: Command list
         **kwargs: Additional subprocess arguments
-        
+
     Returns:
         Popen object
     """
@@ -218,7 +217,7 @@ def run_subprocess_windows(cmd: list, **kwargs) -> subprocess.Popen:
 
 def get_config_dir() -> Path:
     """Get the appropriate config directory for the platform.
-    
+
     Returns:
         Path to Ferrox config directory
     """
@@ -234,12 +233,12 @@ def get_config_dir() -> Path:
 
 def sanitize_unicode_for_mingw(text: str) -> str:
     """Sanitize Unicode text for MINGW terminal compatibility.
-    
+
     MINGW terminals sometimes mangle certain Unicode characters.
-    
+
     Args:
         text: Text that may contain problematic Unicode
-        
+
     Returns:
         Sanitized text with ASCII-safe alternatives
     """

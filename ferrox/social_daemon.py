@@ -55,12 +55,12 @@ class SocialBotDaemon:
 
         # 1. Search some neutral topics
         neutral_topics = ["weather", "sports", "music", "technology", "news"]
-        topic = random.choice(neutral_topics)
+        topic = random.choice(neutral_topics)  # nosec: B311 — jitter delay, not cryptographic
         print(f"[Social Bot] Warmup: Searching for '{topic}'...")
         await search_tweets_tool(mock_ctx, topic, max_results=3)
 
         # Wait 30-60 seconds
-        wait = random.randint(30, 60)
+        wait = random.randint(30, 60)  # nosec: B311 — jitter delay, not cryptographic
         print(f"[Social Bot] Warmup: Waiting {wait}s...")
         await asyncio.sleep(wait)
 
@@ -69,7 +69,7 @@ class SocialBotDaemon:
         await get_trends_tool(mock_ctx)
 
         # Wait another 30-60 seconds
-        wait = random.randint(30, 60)
+        wait = random.randint(30, 60)  # nosec: B311 — jitter delay, not cryptographic
         print(f"[Social Bot] Warmup: Waiting {wait}s...")
         await asyncio.sleep(wait)
 
@@ -84,7 +84,7 @@ class SocialBotDaemon:
 
     def check_night_mode(self) -> bool:
         """Check if currently in night mode hours.
-        
+
         Returns:
             True if in night mode (should not post)
         """
@@ -106,7 +106,7 @@ class SocialBotDaemon:
 
     def check_account_health(self) -> tuple[bool, str]:
         """Check if account is healthy enough to post.
-        
+
         Returns:
             Tuple of (can_post, reason_if_not)
         """
@@ -139,7 +139,7 @@ class SocialBotDaemon:
 
     async def generate_and_post(self) -> bool:
         """Generate content and post it.
-        
+
         Returns:
             True if successful
         """
@@ -222,7 +222,7 @@ class SocialBotDaemon:
                 interval_hours = self.config.schedule.interval_hours
                 jitter_minutes = self.config.schedule.jitter_minutes
 
-                jitter = random.randint(-jitter_minutes, jitter_minutes)
+                jitter = random.randint(-jitter_minutes, jitter_minutes)  # nosec: B311 — jitter delay, not cryptographic
                 wait_seconds = (interval_hours * 3600) + (jitter * 60)
 
                 next_run = datetime.now() + timedelta(seconds=wait_seconds)
@@ -261,10 +261,10 @@ class SocialBotDaemon:
 
 def start_daemon(config: Optional[SocialConfig] = None) -> bool:
     """Start the social bot daemon.
-    
+
     Args:
         config: Configuration (uses default if None)
-        
+
     Returns:
         True if started successfully
     """
@@ -308,7 +308,7 @@ def start_daemon(config: Optional[SocialConfig] = None) -> bool:
 
 def stop_daemon() -> bool:
     """Stop the running daemon.
-    
+
     Returns:
         True if stop signal sent
     """
@@ -325,7 +325,7 @@ def stop_daemon() -> bool:
 
 def get_daemon_status() -> dict:
     """Get daemon status.
-    
+
     Returns:
         Dictionary with status info
     """
@@ -344,10 +344,10 @@ def get_daemon_status() -> dict:
 
 async def run_daemon_once(config: Optional[SocialConfig] = None) -> bool:
     """Run one cycle of the daemon (for manual execution).
-    
+
     Args:
         config: Configuration
-        
+
     Returns:
         True if successful
     """

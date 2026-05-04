@@ -11,12 +11,11 @@ No username or password is ever stored — only session cookies.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
-import os
 import random
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -59,13 +58,13 @@ def _convert_to_httpx_cookiejar(cookies: list[dict]) -> dict:
     return jar
 
 
-def load_browser_cookies() -> Optional[list[dict]]:
+def load_browser_cookies() -> list[dict] | None:
     """Load previously saved browser cookies if they exist."""
     path = get_cookie_path()
     if not path.exists():
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, dict) and "cookies" in data:
             return data["cookies"]
@@ -238,8 +237,10 @@ async def reddit_login_via_browser(timeout_seconds: int = 180) -> str:
     """
     try:
         from playwright.async_api import (
-            async_playwright,
             TimeoutError as PWTimeout,
+        )
+        from playwright.async_api import (
+            async_playwright,
         )
     except ImportError:
         return (
@@ -259,7 +260,7 @@ async def reddit_login_via_browser(timeout_seconds: int = 180) -> str:
     try:
         from playwright_stealth import stealth_async  # type: ignore[import-untyped]
         stealth_available = True
-    except Exception:
+    except Exception:  # nosec: B110 — intentional suppression
         pass
 
     async with async_playwright() as p:
@@ -318,10 +319,8 @@ async def reddit_login_via_browser(timeout_seconds: int = 180) -> str:
 
         # ---- Optional: apply playwright-stealth on top ----
         if stealth_available:
-            try:
-                await stealth_async(page)
-            except Exception:
-                pass  # manual patches above already cover the basics
+            with contextlib.suppress(Exception):
+                await stealth_async(page)  # manual patches above already cover the basics
 
         try:
             await page.goto(
@@ -357,7 +356,7 @@ async def reddit_login_via_browser(timeout_seconds: int = 180) -> str:
             print("  Login detected! Capturing session cookies...\n")
 
             # Small random wait so cookie writes settle
-            await asyncio.sleep(random.uniform(1.0, 2.5))
+            await asyncio.sleep(random.uniform(1.0, 2.5))  # nosec: B311 — jitter delay, not cryptographic
 
             # Capture cookies from the persistent browser context
             cookies = await browser.cookies()
@@ -373,7 +372,7 @@ async def reddit_login_via_browser(timeout_seconds: int = 180) -> str:
                 jar = _convert_to_httpx_cookiejar(cookies)
                 with open(jar_path, "w", encoding="utf-8") as f:
                     json.dump(jar, f, indent=2)
-            except Exception:
+            except Exception:  # nosec: B110 — intentional suppression
                 pass
 
             # Report key cookies for confidence

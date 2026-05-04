@@ -1,9 +1,9 @@
 """Permission engine with scoped allowances for Ferrox"""
 
+import contextlib
 import json
 import os
 from enum import Enum
-from typing import List
 
 from .modes import Mode
 
@@ -57,7 +57,7 @@ class PermissionEngine:
         self.session_denied = set()  # Paths denied for this session only
         self.denied_providers = set()  # Providers denied permanently
         self.session_outside_project = False  # Allow edits outside project for session
-        self.persistent_rules: List[PermissionRule] = []
+        self.persistent_rules: list[PermissionRule] = []
         self._load_config()
 
     def _load_config(self):
@@ -92,10 +92,8 @@ class PermissionEngine:
     def cleanup(self):
         """Remove session permissions file"""
         if os.path.exists(self.config_path):
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(self.config_path)
-            except OSError:
-                pass
 
     def check_access(
         self, path: str, action: PermissionAction, current_mode: Mode, command: str = None
@@ -202,7 +200,7 @@ class PermissionEngine:
 
     def get_permission_options(
         self, path: str, command: str = None, mode: Mode = Mode.NORMAL
-    ) -> List[tuple]:
+    ) -> list[tuple]:
         """Get available permission options for prompt"""
         options = [
             ("Yes", "Allow this action once"),

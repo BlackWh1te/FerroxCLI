@@ -108,13 +108,13 @@ async def browse_url_tool(
         raise ToolExecutionError(
             "Playwright not installed. Run: pip install playwright && playwright install chromium",
             {"url": url, "action": action},
-        )
+        ) from None
     except Exception as e:
         agent = _get_current_agent()
         if agent:
             agent._log_tool_call("browse_url", {"url": url, "action": action})
             agent._log_tool_result("browse_url", str(e), False)
-        raise ToolExecutionError(f"Browser error: {e}", {"url": url, "action": action})
+        raise ToolExecutionError(f"Browser error: {e}", {"url": url, "action": action}) from e
 
 
 async def click_element_tool(ctx: RunContext, url: str, selector: str) -> str:

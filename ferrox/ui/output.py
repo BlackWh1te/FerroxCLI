@@ -224,7 +224,7 @@ def format_agent_response(content: str) -> None:
         try:
             console.print(Markdown(content))
             return
-        except Exception:
+        except Exception:  # nosec: B110 — intentional suppression
             pass
     console.print(content)
 
@@ -298,7 +298,7 @@ def _fence_bare_json(text: str) -> str:
         after = text[match.end() :]
         # Simple heuristic: if the last ``` before us is unclosed, skip
         backticks_before = before.count("```")
-        backticks_after = after.count("```")
+        after.count("```")
         if backticks_before % 2 == 1:
             return block  # inside a fenced block
         try:
@@ -322,7 +322,7 @@ def format_assistant_message(content: str) -> None:
         try:
             console.print(Markdown(content))
             return
-        except Exception:
+        except Exception:  # nosec: B110 — intentional suppression
             pass
     console.print(Text(content, style="white"))
 
@@ -399,7 +399,6 @@ def format_web_search_results(results: str) -> None:
 
     # Parse the results and format them nicely
     lines = results.split("\n")
-    current_section = None
 
     for line in lines:
         line = line.rstrip()

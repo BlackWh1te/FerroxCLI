@@ -3,7 +3,7 @@ Auto-generates step-by-step plans for complex tasks using pydantic-ai
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +21,7 @@ class ProjectPlan(BaseModel):
     """A complete project plan with steps"""
 
     goal: str
-    steps: List[TaskStep] = Field(default_factory=list)
+    steps: list[TaskStep] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
     current_step: int = 0
 

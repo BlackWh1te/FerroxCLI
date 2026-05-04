@@ -1,7 +1,6 @@
 """Semantic search using sentence-transformers and FAISS"""
 
 import json
-from typing import List, Tuple
 
 import faiss
 from sentence_transformers import SentenceTransformer
@@ -23,7 +22,7 @@ class SemanticSearch:
         self.documents = []
         self.dimension = None
 
-    def index_documents(self, documents: List[str]) -> None:
+    def index_documents(self, documents: list[str]) -> None:
         """
         Index documents for semantic search
 
@@ -45,7 +44,7 @@ class SemanticSearch:
         # Add embeddings to index
         self.index.add(embeddings.astype("float32"))
 
-    def search(self, query: str, k: int = 5) -> List[Tuple[str, float]]:
+    def search(self, query: str, k: int = 5) -> list[tuple[str, float]]:
         """
         Search for similar documents
 

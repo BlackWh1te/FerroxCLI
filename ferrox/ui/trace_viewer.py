@@ -59,7 +59,7 @@ def show_trace_viewer(agent_logs: list):
         )
         console.print("-" * 60 + "\n")
 
-        for i, log in enumerate(agent_logs):
+        for _i, log in enumerate(agent_logs):
             timestamp = log.get("timestamp", "")
             ts_str = (
                 timestamp.strftime("%H:%M:%S") if hasattr(timestamp, "strftime") else str(timestamp)

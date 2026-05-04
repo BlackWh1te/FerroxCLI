@@ -5,7 +5,6 @@ Provides input sanitization (prompt injection defense) and output moderation
 """
 
 import re
-from typing import List, Tuple
 
 # Prompt injection detection patterns
 PROMPT_INJECTION_PATTERNS = [
@@ -77,12 +76,12 @@ SAFE_DOMAINS = [
 ]
 
 
-def sanitize_content(text: str) -> Tuple[str, List[str]]:
+def sanitize_content(text: str) -> tuple[str, list[str]]:
     """Sanitize content to remove prompt injection attempts and malicious content.
-    
+
     Args:
         text: Raw text content (e.g., from fetched article)
-        
+
     Returns:
         Tuple of (sanitized_text, list_of_warnings)
     """
@@ -123,12 +122,12 @@ def sanitize_content(text: str) -> Tuple[str, List[str]]:
     return cleaned, warnings
 
 
-def moderation_check(text: str) -> Tuple[bool, List[str]]:
+def moderation_check(text: str) -> tuple[bool, list[str]]:
     """Check text for content that violates platform safety policies.
-    
+
     Args:
         text: Text to check (e.g., generated tweet)
-        
+
     Returns:
         Tuple of (is_safe, list_of_violations)
     """
@@ -182,13 +181,13 @@ def moderation_check(text: str) -> Tuple[bool, List[str]]:
     return is_safe, violations
 
 
-def validate_tweet_length(text: str, max_length: int = 280) -> Tuple[bool, int, str]:
+def validate_tweet_length(text: str, max_length: int = 280) -> tuple[bool, int, str]:
     """Validate tweet length. Twitter counts URLs as 23 chars regardless of actual length.
-    
+
     Args:
         text: Tweet text to validate
         max_length: Maximum allowed length (default 280)
-        
+
     Returns:
         Tuple of (is_valid, effective_length, message)
     """
@@ -210,10 +209,10 @@ def validate_tweet_length(text: str, max_length: int = 280) -> Tuple[bool, int, 
 
 def is_safe_domain(url: str) -> bool:
     """Check if a URL domain is in the safe/reputable list.
-    
+
     Args:
         url: URL to check
-        
+
     Returns:
         True if domain is in safe list
     """
@@ -227,14 +226,14 @@ def is_safe_domain(url: str) -> bool:
     return True
 
 
-def check_duplicate_content(new_text: str, previous_texts: List[str], threshold: float = 0.7) -> Tuple[bool, float, str]:
+def check_duplicate_content(new_text: str, previous_texts: list[str], threshold: float = 0.7) -> tuple[bool, float, str]:
     """Check if new text is too similar to previous posts.
-    
+
     Args:
         new_text: New content to check
         previous_texts: List of previously posted texts
         threshold: Similarity threshold (0.0-1.0) above which it's considered duplicate
-        
+
     Returns:
         Tuple of (is_duplicate, similarity_score, closest_match)
     """
@@ -271,10 +270,7 @@ def check_duplicate_content(new_text: str, previous_texts: List[str], threshold:
         lcs = lcs_length(new_lower, prev_lower)
         max_len = max(len(new_lower), len(prev_lower))
 
-        if max_len == 0:
-            similarity = 0.0
-        else:
-            similarity = lcs / max_len
+        similarity = 0.0 if max_len == 0 else lcs / max_len
 
         if similarity > max_similarity:
             max_similarity = similarity

@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -25,8 +27,8 @@ class AgentDeps:
 
 
 # OpenTelemetry tracing imports
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry import trace  # noqa: E402
+from opentelemetry.sdk.trace import TracerProvider  # noqa: E402
 
 # Initialize tracer (setup provider, but skip console exporter for clean UI)
 trace.set_tracer_provider(TracerProvider())
@@ -36,23 +38,28 @@ tracer = trace.get_tracer(__name__)
 
 _current_agent = None
 
-from ..config import FerroxConfig
-from ..skills.manager import SkillManager
-from .subagents import delegate_task
-from .tools_api import (
+from ..config import FerroxConfig  # noqa: E402
+from ..skills.manager import SkillManager  # noqa: E402
+from .subagents import delegate_task  # noqa: E402
+from .tools_api import (  # noqa: E402
     api_diff_tool,
     api_history_tool,
     api_mock_tool,
     api_test_tool,
     openapi_parse_tool,
 )
-from .tools_browser import browse_url_tool, click_element_tool, extract_text_tool, screenshot_tool
-from .tools_database import (
+from .tools_browser import (  # noqa: E402
+    browse_url_tool,
+    click_element_tool,
+    extract_text_tool,
+    screenshot_tool,
+)
+from .tools_database import (  # noqa: E402
     db_migrate_tool,
     db_query_tool,
     db_schema_tool,
 )
-from .tools_git import (
+from .tools_git import (  # noqa: E402
     git_blame_tool,
     git_branch_tool,
     git_checkout_tool,
@@ -62,7 +69,7 @@ from .tools_git import (
     git_stash_tool,
     git_status_tool,
 )
-from .tools_pydantic import (
+from .tools_pydantic import (  # noqa: E402
     brew_install_tool,
     cargo_install_tool,
     extract_article_content,
@@ -83,7 +90,18 @@ from .tools_pydantic import (
     webfetch_tool,
     write_file_tool,
 )
-from .tools_social import (
+from .tools_reddit import (  # noqa: E402
+    delete_submission_tool,
+    get_inbox_tool,
+    get_trending_subreddits_tool,
+    get_user_karma_tool,
+    post_comment_tool,
+    post_submission_tool,
+    reddit_check_account_health_tool,
+    reddit_check_visibility_tool,
+    search_subreddit_tool,
+)
+from .tools_social import (  # noqa: E402
     check_account_health_tool,
     check_visibility_tool,
     delete_tweet_tool,
@@ -95,17 +113,6 @@ from .tools_social import (
     post_tweet_tool,
     retweet_tweet_tool,
     search_tweets_tool,
-)
-from .tools_reddit import (
-    delete_submission_tool,
-    get_inbox_tool,
-    get_trending_subreddits_tool,
-    get_user_karma_tool,
-    post_comment_tool,
-    post_submission_tool,
-    reddit_check_account_health_tool,
-    reddit_check_visibility_tool,
-    search_subreddit_tool,
 )
 
 # MCP (Model Context Protocol) integration — browser automation, fetch, etc.
@@ -587,12 +594,12 @@ class FerroxAgent:
                 raise ProviderError(
                     f"Model '{model_id}' not found. Available models may have changed.",
                     {"model": model_id},
-                )
+                ) from e
 
             except TimeoutError as e:
                 span.set_attribute("error", f"Timeout: {e}")
                 self._log_thought("Error: Request timeout")
-                raise TimeoutError("Agent request timed out", {"model": model_id})
+                raise TimeoutError("Agent request timed out", {"model": model_id}) from e
 
             except Exception as e:
                 error_type = type(e).__name__
@@ -602,13 +609,13 @@ class FerroxAgent:
 
                 # Re-raise as appropriate exception
                 if "authentication" in error_msg.lower() or "api key" in error_msg.lower():
-                    raise ProviderError(f"Authentication failed: {error_msg}", {"model": model_id})
+                    raise ProviderError(f"Authentication failed: {error_msg}", {"model": model_id}) from e
                 elif "rate limit" in error_msg.lower():
-                    raise ProviderError(f"Rate limit exceeded: {error_msg}", {"model": model_id})
+                    raise ProviderError(f"Rate limit exceeded: {error_msg}", {"model": model_id}) from e
                 elif "network" in error_msg.lower() or "connection" in error_msg.lower():
-                    raise NetworkError(f"Network error: {error_msg}", {"model": model_id})
+                    raise NetworkError(f"Network error: {error_msg}", {"model": model_id}) from e
                 else:
-                    raise AgentError(f"Agent execution failed: {error_msg}", {"model": model_id})
+                    raise AgentError(f"Agent execution failed: {error_msg}", {"model": model_id}) from e
 
     def _log(self, entry: dict):
         self.session_logs.append(entry)
@@ -617,7 +624,7 @@ class FerroxAgent:
         self._log({"type": "thought", "content": content, "timestamp": datetime.now()})
 
         # Publish to event bus for real-time monitoring
-        try:
+        with contextlib.suppress(Exception):
             asyncio.create_task(event_bus.publish(AgentEvent(
                 event_type=EventType.THOUGHT,
                 agent_id=self.agent_id,
@@ -625,15 +632,11 @@ class FerroxAgent:
                 timestamp=datetime.now(),
                 data={"content": content}
             )))
-        except Exception:
-            pass  # Event bus might not be initialized
 
         # Real-time display of agent reasoning
-        try:
+        with contextlib.suppress(Exception):
             from ..ui.output import format_agent_thought
             format_agent_thought(content)
-        except Exception:
-            pass
 
     def _log_tool_call(self, name: str, args: dict):
         self._log({"type": "tool_call", "name": name, "args": args, "timestamp": datetime.now()})
@@ -648,7 +651,7 @@ class FerroxAgent:
         self._log_thought(f"Tool call: {name}({', '.join(args_summary)})")
 
         # Publish to event bus for real-time monitoring
-        try:
+        with contextlib.suppress(Exception):
             asyncio.create_task(event_bus.publish(AgentEvent(
                 event_type=EventType.TOOL_CALL,
                 agent_id=self.agent_id,
@@ -656,15 +659,11 @@ class FerroxAgent:
                 timestamp=datetime.now(),
                 data={"tool_name": name, "args": args, "args_summary": args_summary}
             )))
-        except Exception:
-            pass  # Event bus might not be initialized
 
         # Real-time display of tool calls
-        try:
+        with contextlib.suppress(Exception):
             from ..ui.output import format_tool_call
             format_tool_call(name, args)
-        except Exception:
-            pass
 
     def _log_tool_result(self, name: str, result: str, success: bool):
         self._log(
@@ -684,7 +683,7 @@ class FerroxAgent:
         self._log_thought(f"  Preview: {result_preview}")
 
         # Publish to event bus for real-time monitoring
-        try:
+        with contextlib.suppress(Exception):
             asyncio.create_task(event_bus.publish(AgentEvent(
                 event_type=EventType.TOOL_RESULT,
                 agent_id=self.agent_id,
@@ -697,8 +696,6 @@ class FerroxAgent:
                     "result_preview": result_preview
                 }
             )))
-        except Exception:
-            pass  # Event bus might not be initialized
 
 
 def get_current_session_logs():

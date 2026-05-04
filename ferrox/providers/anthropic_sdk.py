@@ -1,7 +1,7 @@
 """Anthropic SDK integration for Ferrox"""
 
 import os
-from typing import List, Optional
+from typing import Optional
 
 from anthropic import AsyncAnthropic
 
@@ -15,7 +15,7 @@ class AnthropicSDKProvider:
 
     async def message(
         self,
-        messages: List[dict],
+        messages: list[dict],
         model: str = "claude-3-sonnet-20240229",
         max_tokens: int = 4096,
         temperature: float = 0.7,
@@ -60,9 +60,9 @@ class AnthropicSDKProvider:
             # Extract text from response
             return response.content[0].text
         except Exception as e:
-            raise Exception(f"Anthropic API error: {e}")
+            raise Exception(f"Anthropic API error: {e}") from e
 
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         """List available models from Anthropic"""
         # Anthropic doesn't have a models endpoint, return known models
         return [

@@ -4,7 +4,7 @@ from .trace_viewer import show_trace_viewer
 
 # Real-time monitoring components
 try:
-    from .realtime_trace import dashboard as RealTimeTraceViewer
+    from .realtime_trace import dashboard as RealTimeTraceViewer  # noqa: N812
 except ImportError:
     RealTimeTraceViewer = None
 

@@ -6,7 +6,6 @@ import shlex
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 
 @dataclass
@@ -29,7 +28,7 @@ class ProcessManager:
     """
 
     _instance = None
-    jobs: Dict[int, BackgroundJob] = field(default_factory=dict)
+    jobs: dict[int, BackgroundJob] = field(default_factory=dict)
 
     def __new__(cls):
         if cls._instance is None:
@@ -162,10 +161,10 @@ class ProcessManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    async def list_jobs(self) -> List[dict]:
+    async def list_jobs(self) -> list[dict]:
         """List all background jobs."""
         result = []
-        for pid, job in self.jobs.items():
+        for pid, _job in self.jobs.items():
             status = await self.get_job_status(pid)
             result.append(status)
         return result

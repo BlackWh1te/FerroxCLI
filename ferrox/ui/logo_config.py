@@ -1,5 +1,6 @@
 """Logo animation configuration and user preferences."""
 
+import contextlib
 import os
 from dataclasses import dataclass, field
 from enum import Enum
@@ -69,10 +70,8 @@ class LogoConfig:
         # FERROX_ANIM_DURATION=seconds
         env_dur = os.getenv("FERROX_ANIM_DURATION", "")
         if env_dur:
-            try:
+            with contextlib.suppress(ValueError):
                 config.max_duration_sec = float(env_dur)
-            except ValueError:
-                pass
 
         return config
 

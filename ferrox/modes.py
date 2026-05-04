@@ -30,7 +30,7 @@ class ModeManager:
         try:
             self.current_mode = Mode[mode_name.upper()]
         except KeyError:
-            raise ValueError(f"Invalid mode: {mode_name}")
+            raise ValueError(f"Invalid mode: {mode_name}") from None
 
     def get_prompt_prefix(self) -> str:
         """Returns colored prefix for prompt_toolkit"""
@@ -41,7 +41,7 @@ class ModeManager:
             Mode.BYPASS: "#FF0000",
             Mode.SOCIAL: "#1DA1F2",
         }
-        color = colors.get(self.current_mode, "#FFFFFF")
+        colors.get(self.current_mode, "#FFFFFF")
         return f"[{self.current_mode.value}]"
 
     def get_mode_color(self) -> str:

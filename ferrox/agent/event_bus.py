@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 
 class EventType(Enum):
@@ -28,10 +28,10 @@ class AgentEvent:
     agent_id: str
     agent_role: str  # "main", "researcher", "coder", "reviewer", "planner", "worker"
     timestamp: datetime
-    data: Dict[str, Any]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary for serialization."""
         return {
             "event_type": self.event_type.value,
@@ -43,7 +43,7 @@ class AgentEvent:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AgentEvent":
+    def from_dict(cls, data: dict[str, Any]) -> "AgentEvent":
         """Create event from dictionary."""
         return cls(
             event_type=EventType(data["event_type"]),
@@ -59,12 +59,12 @@ class AgentEventBus:
     """Pub/sub event bus for real-time agent monitoring."""
 
     def __init__(self, max_history: int = 1000):
-        self._subscribers: Dict[EventType, List[Callable]] = {}
+        self._subscribers: dict[EventType, list[Callable]] = {}
         self._event_queue: asyncio.Queue = asyncio.Queue()
-        self._event_history: List[AgentEvent] = []
+        self._event_history: list[AgentEvent] = []
         self._max_history = max_history
         self._running = False
-        self._agent_registry: Dict[str, Dict[str, Any]] = {}  # Track active agents
+        self._agent_registry: dict[str, dict[str, Any]] = {}  # Track active agents
 
     def subscribe(self, event_type: EventType, callback: Callable):
         """
@@ -163,7 +163,7 @@ class AgentEventBus:
         agent_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
         limit: int = 50
-    ) -> List[AgentEvent]:
+    ) -> list[AgentEvent]:
         """
         Get recent events, optionally filtered.
 
@@ -185,7 +185,7 @@ class AgentEventBus:
 
         return events[-limit:]
 
-    def get_active_agents(self) -> Dict[str, Dict[str, Any]]:
+    def get_active_agents(self) -> dict[str, dict[str, Any]]:
         """Get information about all active agents."""
         return {
             agent_id: info
@@ -193,7 +193,7 @@ class AgentEventBus:
             if info.get("status") == "active"
         }
 
-    def get_agent_info(self, agent_id: str) -> Optional[Dict[str, Any]]:
+    def get_agent_info(self, agent_id: str) -> Optional[dict[str, Any]]:
         """Get information about a specific agent."""
         return self._agent_registry.get(agent_id)
 
@@ -201,7 +201,7 @@ class AgentEventBus:
         """Clear event history."""
         self._event_history.clear()
 
-    def get_event_count(self, agent_id: Optional[str] = None) -> Dict[EventType, int]:
+    def get_event_count(self, agent_id: Optional[str] = None) -> dict[EventType, int]:
         """
         Get count of events by type, optionally filtered by agent.
 

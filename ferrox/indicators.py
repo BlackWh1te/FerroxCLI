@@ -1,5 +1,6 @@
 """Status indicators for Ferrox CLI - thinking, running, fetching"""
 
+import contextlib
 from typing import Optional
 
 from rich.console import Console
@@ -55,19 +56,15 @@ class StatusIndicator:
     def stop(self):
         self.running = False
         if self.status:
-            try:
+            with contextlib.suppress(Exception):
                 self.status.stop()
-            except Exception:
-                pass
             self.status = None
 
     def update_message(self, message: str):
         self.message = message
         if self.status:
-            try:
+            with contextlib.suppress(Exception):
                 self.status.update(f"[cyan]{message}[/cyan]")
-            except Exception:
-                pass
 
 
 def get_spinner(state: str = "thinking", prefix: str = "") -> StatusIndicator:
