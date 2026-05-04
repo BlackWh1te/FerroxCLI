@@ -1,10 +1,11 @@
 """Tests for ferrox.tools module"""
-import pytest
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
-from ferrox.tools import execute_read_file, execute_run_command, execute_list_directory
+
+import pytest
+
+from ferrox.tools import execute_list_directory, execute_read_file, execute_run_command
 
 
 class TestExecuteReadFile:

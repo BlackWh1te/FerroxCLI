@@ -1,15 +1,15 @@
 """Pytest configuration and fixtures for FerroxCLI tests"""
-import pytest
 import asyncio
-from pathlib import Path
 import sys
-import os
+from pathlib import Path
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from ferrox.config import FerroxConfig, get_default_config
 from ferrox.agent.orchestrator import FerroxAgent
+from ferrox.config import get_default_config
 
 
 @pytest.fixture

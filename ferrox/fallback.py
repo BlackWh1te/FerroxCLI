@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from .api import send_message_with_tools
 from .config import FerroxConfig
@@ -31,7 +31,7 @@ class FallbackEngine:
                     base_url=active_provider.base_url,
                     api_key=active_provider.api_key,
                 )
-                active_provider.last_used = datetime.utcnow()
+                active_provider.last_used = datetime.now(UTC)
                 self._save_config()
                 return {
                     "success": True,
@@ -64,7 +64,7 @@ class FallbackEngine:
                         base_url=provider.base_url,
                         api_key=provider.api_key,
                     )
-                    provider.last_used = datetime.utcnow()
+                    provider.last_used = datetime.now(UTC)
                     self._save_config()
                     return {
                         "success": True,

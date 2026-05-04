@@ -1,5 +1,4 @@
 """Tests for ferrox.config module"""
-import pytest
 from ferrox.config import FerroxConfig, get_default_config, validate_config
 
 
@@ -38,7 +37,7 @@ def test_config_add_provider():
     """Test adding a new provider"""
     config = FerroxConfig(providers=[])
     from ferrox.providers.config import ProviderConfig
-    
+
     new_provider = ProviderConfig(
         id="test-provider",
         name="Test Provider",
@@ -46,7 +45,7 @@ def test_config_add_provider():
         base_url="http://test.com",
         api_key="test-key"
     )
-    
+
     config.add_provider(new_provider)
     assert len(config.providers) == 1
     assert config.providers[0].id == "test-provider"
@@ -56,7 +55,7 @@ def test_config_remove_provider():
     """Test removing a provider"""
     config = get_default_config()
     initial_count = len(config.providers)
-    
+
     if initial_count > 0:
         provider_id = config.providers[0].id
         config.remove_provider(provider_id)

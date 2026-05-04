@@ -1,9 +1,11 @@
 """Tests for ferrox.api module"""
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
+
 import httpx
-from ferrox.api import fetch_models, send_message, APIError, validate_provider
-from ferrox.config import ProviderConfig, get_default_config
+import pytest
+
+from ferrox.api import APIError, fetch_models, send_message, validate_provider
+from ferrox.config import ProviderConfig
 
 
 @pytest.fixture
@@ -33,7 +35,7 @@ def mock_config(mock_provider):
 
 class TestFetchModels:
     """Test fetch_models function"""
-    
+
     @patch('ferrox.api.httpx.Client')
     def test_fetch_models_success(self, mock_client, mock_config):
         """Test successful model fetching"""
