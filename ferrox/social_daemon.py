@@ -18,7 +18,14 @@ from .social_config import (
     save_social_state,
 )
 
-# Content safety
+# Content generation + queue
+from .utils.content_generator import (
+    ContentGenerationError,
+    fetch_news_topics,
+    generate_x_tweet,
+)
+from .utils.post_queue import PostQueue, QueuedPost
+
 # Platform compatibility
 from .utils.platform_compat import (
     LockFileDaemon,
@@ -41,6 +48,13 @@ class SocialBotDaemon:
         self.running = False
         self.current_account_type = "new"
         self._stop_event = asyncio.Event()
+
+        # Rate-limit compliant posting queue
+        limits = get_rate_limits_for_account_type(self.current_account_type)
+        self.queue = PostQueue(
+            max_posts_per_hour=limits.max_posts_per_hour,
+            max_posts_per_day=limits.max_posts_per_day,
+        )
 
     async def warmup_routine(self):
         """Execute warmup routine before posting to appear human."""
@@ -137,34 +151,114 @@ class SocialBotDaemon:
 
         return True, ""
 
+    async def _fetch_and_enqueue(self) -> bool:
+        """Fetch news, generate an X tweet, and enqueue it.
+
+        Returns:
+            True if a tweet was successfully enqueued.
+        """
+        try:
+            topics = fetch_news_topics(self.config.news_sources, max_items=3)
+            if not topics:
+                print("[Social Bot] No news topics fetched – skipping enqueue")
+                return False
+
+            topic = random.choice(topics)  # nosec: B311 — topic selection, not crypto
+
+            tweet = generate_x_tweet(
+                strategy=self.config.strategy,
+                topic=topic,
+                tone=self.config.content.tone,
+            )
+
+            post_id = f"x_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            post = QueuedPost(
+                id=post_id,
+                platform="x",
+                content={"text": tweet},
+                scheduled_at=datetime.now(),
+            )
+
+            enqueued = await self.queue.enqueue(post)
+            if enqueued:
+                print(f"[Social Bot] Enqueued tweet '{tweet[:60]}...'")
+                return True
+            else:
+                print("[Social Bot] Tweet skipped (duplicate)")
+                return False
+
+        except ContentGenerationError as exc:
+            print(f"[Social Bot] Content generation failed: {exc}")
+            return False
+        except Exception as exc:
+            print(f"[Social Bot] Unexpected error in _fetch_and_enqueue: {exc}")
+            return False
+
+    async def _publish_from_queue(self) -> bool:
+        """Dequeue one tweet and publish it to X.
+
+        Returns:
+            True if a tweet was successfully published.
+        """
+        post = await self.queue.dequeue()
+        if post is None:
+            return False
+
+        try:
+            # Draft mode: log instead of posting
+            if self.config.content.draft_mode:
+                print("[Social Bot] DRAFT MODE – would tweet:")
+                print(f"  {post.content.get('text', '')[:100]}")
+                await self.queue.mark_posted(post)
+                self._record_success()
+                return True
+
+            # Live tweet via tool
+            from pydantic_ai import RunContext
+            from .agent.tools_social import post_tweet_tool
+
+            ctx = RunContext({})
+            result = await post_tweet_tool(
+                ctx,
+                text=post.content.get("text", ""),
+            )
+            print(f"[Social Bot] Tweeted: {result}")
+
+            await self.queue.mark_posted(post)
+            self._record_success()
+            return True
+
+        except Exception as exc:
+            print(f"[Social Bot] Tweet failed: {exc}")
+            await self.queue.mark_failed(post)
+            self._record_failure()
+            return False
+
+    def _record_success(self) -> None:
+        """Update state after a successful post."""
+        self.state.posts_today += 1
+        self.state.consecutive_failures = 0
+        save_social_state(self.state)
+
+    def _record_failure(self) -> None:
+        """Update state after a failed post."""
+        self.state.consecutive_failures += 1
+        save_social_state(self.state)
+
     async def generate_and_post(self) -> bool:
         """Generate content and post it.
 
+        If the queue is empty we fetch news and enqueue a new tweet first,
+        then attempt to publish one item from the queue.
+
         Returns:
-            True if successful
+            True if a tweet was successfully published this cycle.
         """
-        try:
+        if self.queue.pending_count == 0:
+            await self._fetch_and_enqueue()
 
-            # In a real implementation, this would use the LLM to:
-            # 1. Fetch news from RSS/web
-            # 2. Analyze and synthesize
-            # 3. Generate tweet text
-            # 4. Post
-
-            # For this scaffold, we'll just log what would happen
-            print("[Social Bot] Would generate and post content based on strategy:")
-            print(f"  Strategy: {self.config.strategy}")
-
-            # TODO: Integrate with LLM for content generation
-            # This would call the agent with the strategy and tools
-
-            return True
-
-        except Exception as e:
-            print(f"[Social Bot] Error in generate_and_post: {e}")
-            self.state.consecutive_failures += 1
-            save_social_state(self.state)
-            return False
+        published = await self._publish_from_queue()
+        return published
 
     async def run_cycle(self):
         """Run one posting cycle."""

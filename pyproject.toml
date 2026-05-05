@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ferrox-cli"
-version = "1.2.4"
+version = "1.2.5"
 authors = [
     { name = "Shukhrat", email = "shukhrat@example.com" },
 ]

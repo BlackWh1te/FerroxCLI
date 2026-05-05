@@ -19,7 +19,14 @@ from .reddit_config import (
     save_reddit_state,
 )
 
-# Content safety
+# Content generation + queue
+from .utils.content_generator import (
+    ContentGenerationError,
+    fetch_news_topics,
+    generate_reddit_post,
+)
+from .utils.post_queue import PostQueue, QueuedPost
+
 # Platform compatibility
 from .utils.platform_compat import (
     LockFileDaemon,
@@ -52,6 +59,13 @@ class RedditBotDaemon:
         self.running = False
         self.current_account_type = "new"
         self._stop_event = asyncio.Event()
+
+        # Rate-limit compliant posting queue
+        limits = get_rate_limits_for_account_type(self.current_account_type)
+        self.queue = PostQueue(
+            max_posts_per_hour=limits.max_posts_per_hour,
+            max_posts_per_day=limits.max_posts_per_day,
+        )
 
     async def warmup_routine(self):
         """Execute warmup routine before posting to appear human."""
@@ -153,35 +167,132 @@ class RedditBotDaemon:
 
         return True, ""
 
+    async def _fetch_and_enqueue(self) -> bool:
+        """Fetch news, generate a Reddit post, and enqueue it.
+
+        Returns:
+            True if a post was successfully enqueued.
+        """
+        try:
+            topics = fetch_news_topics(self.config.news_sources, max_items=3)
+            if not topics:
+                print("[Reddit Bot] No news topics fetched – skipping enqueue")
+                return False
+
+            # Pick a random topic + target subreddit
+            topic = random.choice(topics)  # nosec: B311 — topic selection, not crypto
+            subreddit = ""
+            if self.config.content.subreddits:
+                subreddit = random.choice(  # nosec: B311 — subreddit selection
+                    self.config.content.subreddits
+                )
+
+            generated = generate_reddit_post(
+                strategy=self.config.strategy,
+                topic=topic,
+                tone=self.config.content.tone,
+                subreddit=subreddit,
+            )
+
+            post_id = f"reddit_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            post = QueuedPost(
+                id=post_id,
+                platform="reddit",
+                content={
+                    "title": generated["title"],
+                    "body": generated["body"],
+                    "subreddit": subreddit,
+                },
+                scheduled_at=datetime.now(),
+                topic_hash=generated.get("topic_hash", ""),
+            )
+
+            enqueued = await self.queue.enqueue(post)
+            if enqueued:
+                print(f"[Reddit Bot] Enqueued post '{generated['title'][:60]}...' → r/{subreddit or '?'}")
+                return True
+            else:
+                print("[Reddit Bot] Post skipped (duplicate)")
+                return False
+
+        except ContentGenerationError as exc:
+            print(f"[Reddit Bot] Content generation failed: {exc}")
+            return False
+        except Exception as exc:
+            print(f"[Reddit Bot] Unexpected error in _fetch_and_enqueue: {exc}")
+            return False
+
+    async def _publish_from_queue(self) -> bool:
+        """Dequeue one post and submit it to Reddit.
+
+        Returns:
+            True if a post was successfully published.
+        """
+        post = await self.queue.dequeue()
+        if post is None:
+            # Rate limits or empty queue
+            return False
+
+        try:
+            # Draft mode: log instead of posting
+            if self.config.content.draft_mode:
+                print("[Reddit Bot] DRAFT MODE – would post:")
+                print(f"  Subreddit: r/{post.content.get('subreddit', '?')}")
+                print(f"  Title: {post.content.get('title', '')[:80]}")
+                await self.queue.mark_posted(post)
+                self._record_success()
+                return True
+
+            # Live post via tool
+            from pydantic_ai import RunContext
+            from .agent.tools_reddit import post_submission_tool
+
+            ctx = RunContext({})
+            result = await post_submission_tool(
+                ctx,
+                subreddit=post.content.get("subreddit", "technology"),
+                title=post.content.get("title", ""),
+                body=post.content.get("body", ""),
+            )
+            print(f"[Reddit Bot] Posted: {result}")
+
+            await self.queue.mark_posted(post)
+            self._record_success()
+            return True
+
+        except Exception as exc:
+            print(f"[Reddit Bot] Post failed: {exc}")
+            await self.queue.mark_failed(post)
+            self._record_failure()
+            return False
+
+    def _record_success(self) -> None:
+        """Update state after a successful post."""
+        self.state.posts_today += 1
+        self.state.consecutive_failures = 0
+        save_reddit_state(self.state)
+
+    def _record_failure(self) -> None:
+        """Update state after a failed post."""
+        self.state.consecutive_failures += 1
+        save_reddit_state(self.state)
+
     async def generate_and_post(self) -> bool:
         """Generate content and post it.
 
+        If the queue is empty we fetch news and enqueue a new post first,
+        then attempt to publish one item from the queue.
+
         Returns:
-            True if successful
+            True if a post was successfully published this cycle.
         """
-        try:
+        # 1. Fill queue if empty
+        if self.queue.pending_count == 0:
+            await self._fetch_and_enqueue()
 
-            # In a real implementation, this would use the LLM to:
-            # 1. Fetch news from RSS/web
-            # 2. Analyze and synthesize
-            # 3. Generate post title and body
-            # 4. Post to configured subreddit
-
-            # For this scaffold, we'll just log what would happen
-            print("[Reddit Bot] Would generate and post content based on strategy:")
-            print(f"  Strategy: {self.config.strategy}")
-            print(f"  Target subreddits: {self.config.content.subreddits}")
-
-            # TODO: Integrate with LLM for content generation
-            # This would call the agent with the strategy and tools
-
-            return True
-
-        except Exception as e:
-            print(f"[Reddit Bot] Error in generate_and_post: {e}")
-            self.state.consecutive_failures += 1
-            save_reddit_state(self.state)
-            return False
+        # 2. Try to publish
+        published = await self._publish_from_queue()
+        return published
 
     async def run_cycle(self):
         """Run one posting cycle."""

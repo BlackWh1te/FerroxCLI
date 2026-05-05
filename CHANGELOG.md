@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2026-05-05
+
+### Added
+- **Phase 1: Daemon Intelligence** — Wired LLM content generation and rate-limited queuing into `reddit_daemon.py` and `social_daemon.py`.
+  - `ferrox/utils/content_generator.py`: RSS fetching via `feedparser`, hash-based dedup, and mock LLM generation helpers (`generate_reddit_post`, `generate_reddit_comment`, `generate_x_tweet`, `generate_x_thread`). All outputs pass through `sanitize_content` and `moderation_check`.
+  - `ferrox/utils/post_queue.py`: `PostQueue` class with `enqueue()` (dedup by content hash + topic hash), `dequeue()` (rate-limit gate), `mark_posted()`, `mark_failed()`, and rolling per-hour/per-day counters.
+  - Reddit daemon: `_fetch_and_enqueue()` fetches news, generates post, enqueues; `_publish_from_queue()` dequeues and calls `post_submission_tool` (or logs in draft mode); `generate_and_post()` orchestrator fills queue then publishes.
+  - X daemon: same pattern with `_fetch_and_enqueue()` for tweets and `_publish_from_queue()` calling `post_tweet_tool`.
+- **Test coverage for `content_generator.py`** (29 tests): `NewsTopic` dataclass, `_hash_topic`, `fetch_news_topics` RSS parsing, empty sources, description fallback, injection skipping, parse failures, max_items, `generate_reddit_post` title/body parsing and truncation, moderation failure, `generate_reddit_comment`, `generate_x_tweet` length and prompt validation, `generate_x_thread` numbered parsing and truncation.
+- **Test coverage for `post_queue.py`** (15 tests): enqueue/dequeue, duplicate rejection by content hash and topic hash, rate-limit blocking, `mark_posted`/`mark_failed` state updates, `posted_today`/`failed_today` 24h windows, `consecutive_failures` counting, mixed platforms.
+- **Test coverage for `reddit_daemon.py` intelligence layer** (13 tests): `_fetch_and_enqueue`, `_publish_from_queue` draft/live/error paths, `generate_and_post` orchestrator with/without existing queue items, `_record_success`/`_record_failure`, daemon initialization with `PostQueue` and account-type rate limits.
+- **Test coverage for `social_daemon.py` intelligence layer** (13 tests): `_fetch_and_enqueue`, `_publish_from_queue` draft/live/error paths, `generate_and_post` orchestrator, `_record_success`/`_record_failure`, daemon initialization with `PostQueue` and account-type rate limits.
+
+### Fixed
+- `fetch_news_topics` now returns early for empty source lists without importing `feedparser`.
+- `PostQueue` now tracks `_queued_hashes` to reject duplicate posts that are already in-flight (not just already-posted).
+
 ## [1.2.4] - 2026-05-05
 
 ### Fixed
