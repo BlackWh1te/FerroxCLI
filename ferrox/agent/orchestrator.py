@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import os
 from dataclasses import dataclass
@@ -625,13 +624,13 @@ class FerroxAgent:
 
         # Publish to event bus for real-time monitoring
         with contextlib.suppress(Exception):
-            asyncio.create_task(event_bus.publish(AgentEvent(
+            event_bus.publish_sync(AgentEvent(
                 event_type=EventType.THOUGHT,
                 agent_id=self.agent_id,
                 agent_role=self.agent_role,
                 timestamp=datetime.now(),
                 data={"content": content}
-            )))
+            ))
 
         # Real-time display of agent reasoning
         with contextlib.suppress(Exception):
@@ -652,13 +651,13 @@ class FerroxAgent:
 
         # Publish to event bus for real-time monitoring
         with contextlib.suppress(Exception):
-            asyncio.create_task(event_bus.publish(AgentEvent(
+            event_bus.publish_sync(AgentEvent(
                 event_type=EventType.TOOL_CALL,
                 agent_id=self.agent_id,
                 agent_role=self.agent_role,
                 timestamp=datetime.now(),
                 data={"tool_name": name, "args": args, "args_summary": args_summary}
-            )))
+            ))
 
         # Real-time display of tool calls
         with contextlib.suppress(Exception):
@@ -684,7 +683,7 @@ class FerroxAgent:
 
         # Publish to event bus for real-time monitoring
         with contextlib.suppress(Exception):
-            asyncio.create_task(event_bus.publish(AgentEvent(
+            event_bus.publish_sync(AgentEvent(
                 event_type=EventType.TOOL_RESULT,
                 agent_id=self.agent_id,
                 agent_role=self.agent_role,
@@ -695,7 +694,7 @@ class FerroxAgent:
                     "success": success,
                     "result_preview": result_preview
                 }
-            )))
+            ))
 
 
 def get_current_session_logs():

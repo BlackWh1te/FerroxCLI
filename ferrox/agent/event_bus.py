@@ -100,6 +100,26 @@ class AgentEventBus:
         """
         await self._event_queue.put(event)
 
+    def publish_sync(self, event: AgentEvent):
+        """
+        Synchronous, fire-and-forget wrapper for publishing events.
+
+        Safe to call from sync code. Schedules on the running event loop
+        if one exists; otherwise records the event directly into history
+        so no data is lost and no unawaited-coroutine warnings are raised.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+            # Schedule on the loop but don't hold a reference.
+            # The _process_events task will pick it up from the queue.
+            loop.call_soon_threadsafe(self._event_queue.put_nowait, event)
+        except RuntimeError:
+            # No event loop running — record directly to avoid orphaned tasks
+            self._event_history.append(event)
+            if len(self._event_history) > self._max_history:
+                self._event_history.pop(0)
+            self._update_agent_registry(event)
+
     async def start(self):
         """Start event processing loop."""
         if self._running:
@@ -157,6 +177,13 @@ class AgentEventBus:
             # Update last activity for any other event
             if agent_id in self._agent_registry:
                 self._agent_registry[agent_id]["last_activity"] = event.timestamp
+            else:
+                # Auto-create entry for first-seen agents
+                self._agent_registry[agent_id] = {
+                    "role": event.agent_role,
+                    "last_activity": event.timestamp,
+                    "status": "active"
+                }
 
     def get_recent_events(
         self,
