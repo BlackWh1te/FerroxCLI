@@ -4,6 +4,8 @@ import os
 from typing import Optional
 
 import sentry_sdk
+
+from ferrox import __version__
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
 
@@ -36,7 +38,7 @@ def init_sentry(
             traces_sample_rate=traces_sample_rate,
             environment=sentry_env,
             # Set release to version if available
-            release=os.getenv("FERROX_VERSION", "1.0.0"),
+            release=os.getenv("FERROX_VERSION", __version__),
             # Ignore common errors that might not be actionable
             ignore_errors=[
                 KeyboardInterrupt,

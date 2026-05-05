@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2026-05-05
+
+### Fixed
+- `monitoring.py` now reads the release version dynamically from `ferrox.__version__` instead of a hardcoded `"1.0.0"`.
+
+### Added
+- **Test coverage for `monitoring.py`** (12 tests): Sentry initialization with/without DSN, environment fallback, version override, init failure handling, and all wrapper functions (`capture_exception`, `capture_message`, `add_breadcrumb`, `set_user_context`, `set_tag`).
+- **Test coverage for `reddit_browser_login.py`** (13 tests): Path helpers, `_is_reddit_logged_in` URL state detection, `has_saved_reddit_session` with valid/empty/missing cookie files, `clear_reddit_session` file deletion, and `reddit_login_via_browser` BrowserLoginConfig creation.
+- **Test coverage for `x_browser_login.py`** (12 tests): Path helpers, `_is_x_logged_in` URL state detection, `has_saved_x_session`, `clear_x_session`, and `x_login_via_browser` BrowserLoginConfig creation.
+- **Test coverage for `utils/browser_login.py`** (10 tests): `save_cookies_playwright_format` JSON serialization and parent-dir creation, `convert_to_httpx_cookiejar` name/value extraction and empty-name skipping, `load_browser_cookies` dict/list format parsing and invalid JSON fallback.
+- **Test coverage for `ui/tool_logger.py`** (9 tests): All tool execution logging paths (`read_file`, `search_text`, `edit_file` accepted/rejected, `run_command` success/failure, unknown tools with/without summary).
+- **Test coverage for `ui/trace_viewer.py`** (11 tests): `show_help_panel` header and keyboard shortcuts, `show_trace_viewer` empty logs, thought/tool_call/tool_result rendering, summary stats, long content handling, timestamp string fallback, and input waiting.
+
 ## [1.2.3] - 2026-05-05
 
 ### Fixed
