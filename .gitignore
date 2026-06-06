@@ -149,3 +149,4 @@ config.json
 debug.log
 model_cache.json
 session_state.json
+.hermes_sync_state.json

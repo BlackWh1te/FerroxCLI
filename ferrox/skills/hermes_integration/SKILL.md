@@ -52,29 +52,82 @@ Connect to Hermes gateway for:
 
 ## Available Tools
 
+### Core
 | Tool | Description |
 |------|-------------|
-| `hermes_chat` | Send message to Hermes agent, get response |
-| `hermes_model_list` | List available models in Hermes |
-| `hermes_model_switch` | Switch Hermes active model |
-| `hermes_gateway_status` | Check Hermes gateway status |
-| `hermes_gateway_start` | Start Hermes gateway |
-| `hermes_gateway_stop` | Stop Hermes gateway |
-| `hermes_skills_list` | List Hermes skills |
-| `hermes_skill_install` | Install skill from Hermes Hub |
-| `hermes_skill_create` | Create new Hermes skill |
-| `hermes_memory_query` | Query Hermes memory |
-| `hermes_memory_add` | Add memory to Hermes |
-| `hermes_cron_list` | List Hermes cron jobs |
-| `hermes_cron_add` | Add cron job to Hermes |
-| `hermes_cron_remove` | Remove cron job |
+| `hermes_chat` | Send a single query to Hermes (non-interactive) |
+| `hermes_model_list` | List available models |
+| `hermes_model_switch` | Switch active model |
+| `hermes_status` | Show session / system status |
+| `hermes_usage` | Token / cost breakdown |
+| `hermes_insights` | Usage insights over N days |
+| `hermes_compress` | Manually trigger context compression |
+| `hermes_doctor` | Run diagnostics |
+| `hermes_setup` | Run setup wizard (optionally `--portal`) |
+| `hermes_update` | Self-update Hermes |
+| `hermes_portal_info` | Show Nous Portal info |
+
+### Gateway & platforms
+| Tool | Description |
+|------|-------------|
+| `hermes_gateway_status` | Check gateway status |
+| `hermes_gateway_start` | Start gateway |
+| `hermes_gateway_stop` | Stop gateway |
+
+### Skills
+| Tool | Description |
+|------|-------------|
+| `hermes_skills_list` | List installed skills |
+| `hermes_skills_browse` | Browse the Skills Hub |
+| `hermes_skills_hub` | Generic hub action (browse / search / install) |
+| `hermes_skill_install` | Install a skill from the Hub |
+| `hermes_skill_create` | Create a new skill |
+| `hermes_skills_export` | Export a Ferrox skill → Hermes layout |
+| `hermes_skills_import` | Import a Hermes skill → Ferrox |
+| `hermes_skills_sync_status` | Show sync history |
+
+### Memory, Cron, Kanban
+| Tool | Description |
+|------|-------------|
+| `hermes_memory_query` | Query persistent memory |
+| `hermes_memory_add` | Add to memory |
+| `hermes_cron_list` | List scheduled jobs |
+| `hermes_cron_add` | Schedule a job |
+| `hermes_cron_remove` | Remove a job |
 | `hermes_kanban_list` | List kanban boards |
-| `hermes_kanban_create` | Create kanban board |
-| `hermes_kanban_task_add` | Add task to kanban |
-| `hermes_session_list` | List Hermes sessions |
+| `hermes_kanban_create` | Create a board |
+| `hermes_kanban_task_add` | Add a task |
+
+### Sessions
+| Tool | Description |
+|------|-------------|
+| `hermes_sessions_list` | List recent sessions |
+| `hermes_sessions_resume` | Resume a session by id |
+| `hermes_session_list` | Legacy session list |
 | `hermes_session_recap` | Get session summary |
-| `hermes_config_get` | Get Hermes config value |
-| `hermes_config_set` | Set Hermes config value |
+
+### Config, Tools, Migration
+| Tool | Description |
+|------|-------------|
+| `hermes_config_get` | Get config value |
+| `hermes_config_set` | Set config value |
+| `hermes_tools_list` | List active toolsets |
+| `hermes_claw_migrate` | Migrate from OpenClaw |
+
+### Personality, Voice, Reasoning
+| Tool | Description |
+|------|-------------|
+| `hermes_personality_set` | Set active personality (e.g. `concise`, `pirate`) |
+| `hermes_voice_status` | Show voice mode status |
+| `hermes_voice_toggle` | Enable / disable voice mode |
+| `hermes_reasoning_set` | Set reasoning effort (`low` / `medium` / `high`) |
+
+### Background & MCP
+| Tool | Description |
+|------|-------------|
+| `hermes_background` | Start a background agent session |
+| `hermes_mcp_list` | List configured MCP servers |
+| `hermes_mcp_serve` | Start Hermes as an MCP server |
 
 ## Configuration
 

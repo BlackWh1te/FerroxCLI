@@ -114,7 +114,10 @@ from .tools_social import (  # noqa: E402
     search_tweets_tool,
 )
 from .tools_hermes import (  # noqa: E402
+    hermes_background_tool,
     hermes_chat_tool,
+    hermes_claw_migrate_tool,
+    hermes_compress_tool,
     hermes_config_get_tool,
     hermes_config_set_tool,
     hermes_cron_add_tool,
@@ -124,18 +127,38 @@ from .tools_hermes import (  # noqa: E402
     hermes_gateway_start_tool,
     hermes_gateway_status_tool,
     hermes_gateway_stop_tool,
+    hermes_insights_tool,
     hermes_kanban_create_tool,
     hermes_kanban_list_tool,
     hermes_kanban_task_add_tool,
+    hermes_mcp_list_tool,
+    hermes_mcp_serve_tool,
     hermes_memory_add_tool,
     hermes_memory_query_tool,
     hermes_model_list_tool,
     hermes_model_switch_tool,
+    hermes_personality_set_tool,
+    hermes_portal_info_tool,
+    hermes_reasoning_set_tool,
     hermes_session_list_tool,
     hermes_session_recap_tool,
+    hermes_sessions_list_tool,
+    hermes_sessions_resume_tool,
+    hermes_setup_tool,
     hermes_skill_create_tool,
     hermes_skill_install_tool,
+    hermes_skills_browse_tool,
+    hermes_skills_export_tool,
+    hermes_skills_hub_tool,
+    hermes_skills_import_tool,
     hermes_skills_list_tool,
+    hermes_skills_sync_status_tool,
+    hermes_status_tool,
+    hermes_tools_list_tool,
+    hermes_update_tool,
+    hermes_usage_tool,
+    hermes_voice_status_tool,
+    hermes_voice_toggle_tool,
 )
 
 # MCP (Model Context Protocol) integration — browser automation, fetch, etc.
@@ -353,8 +376,13 @@ class FerroxAgent:
         self._agent.tool(hermes_gateway_start_tool)
         self._agent.tool(hermes_gateway_stop_tool)
         self._agent.tool(hermes_skills_list_tool)
+        self._agent.tool(hermes_skills_browse_tool)
+        self._agent.tool(hermes_skills_hub_tool)
         self._agent.tool(hermes_skill_install_tool)
         self._agent.tool(hermes_skill_create_tool)
+        self._agent.tool(hermes_skills_export_tool)
+        self._agent.tool(hermes_skills_import_tool)
+        self._agent.tool(hermes_skills_sync_status_tool)
         self._agent.tool(hermes_memory_query_tool)
         self._agent.tool(hermes_memory_add_tool)
         self._agent.tool(hermes_cron_list_tool)
@@ -363,11 +391,29 @@ class FerroxAgent:
         self._agent.tool(hermes_kanban_list_tool)
         self._agent.tool(hermes_kanban_create_tool)
         self._agent.tool(hermes_kanban_task_add_tool)
+        self._agent.tool(hermes_sessions_list_tool)
+        self._agent.tool(hermes_sessions_resume_tool)
         self._agent.tool(hermes_session_list_tool)
         self._agent.tool(hermes_session_recap_tool)
         self._agent.tool(hermes_config_get_tool)
         self._agent.tool(hermes_config_set_tool)
         self._agent.tool(hermes_doctor_tool)
+        self._agent.tool(hermes_tools_list_tool)
+        self._agent.tool(hermes_setup_tool)
+        self._agent.tool(hermes_update_tool)
+        self._agent.tool(hermes_portal_info_tool)
+        self._agent.tool(hermes_background_tool)
+        self._agent.tool(hermes_personality_set_tool)
+        self._agent.tool(hermes_voice_status_tool)
+        self._agent.tool(hermes_voice_toggle_tool)
+        self._agent.tool(hermes_reasoning_set_tool)
+        self._agent.tool(hermes_usage_tool)
+        self._agent.tool(hermes_insights_tool)
+        self._agent.tool(hermes_compress_tool)
+        self._agent.tool(hermes_claw_migrate_tool)
+        self._agent.tool(hermes_status_tool)
+        self._agent.tool(hermes_mcp_list_tool)
+        self._agent.tool(hermes_mcp_serve_tool)
 
     def _build_mcp_toolsets(self):
         """Build MCPServerStdio instances from FerroxConfig.
