@@ -5,6 +5,12 @@ start of every work session. Format per `bridgmiend/PROTOCOL.md` §4.
 
 ---
 
+## 2026-06-06T20:15:00Z — [agent-b]
+- task: Expand Hermes integration: 22 -> 45 tools, fix chat CLI args (hermes chat -q, not --oneshot), add bidirectional skills sync (Ferrox <-> Hermes)
+- commit: fccd751
+- files: ferrox/agent/tools_hermes.py, ferrox/agent/orchestrator.py, ferrox/skills/sync.py, ferrox/skills/hermes_integration/SKILL.md, tests/test_agent/test_tools_hermes.py, .gitignore
+- for the other agent: New tools: hermes_status, hermes_usage, hermes_insights, hermes_compress, hermes_setup, hermes_update, hermes_portal_info, hermes_tools_list, hermes_skills_browse, hermes_skills_hub, hermes_background, hermes_sessions_list, hermes_sessions_resume, hermes_personality_set, hermes_voice_status, hermes_voice_toggle, hermes_reasoning_set, hermes_claw_migrate, hermes_mcp_list, hermes_mcp_serve, hermes_skills_export, hermes_skills_import, hermes_skills_sync_status. New module ferrox/skills/sync.py provides export_ferrox_skill, import_hermes_skill, sync_all, list_exported. Sync state persisted to ferrox/skills/.hermes_sync_state.json (gitignored). All 381 tests pass (8 new for sync + chat CLI fix).
+
 ## 2026-06-06T19:30:00Z — [agent-b]
 - task: Add Hermes Agent (https://github.com/NousResearch/hermes-agent) integration plugin
 - commit: c747aac

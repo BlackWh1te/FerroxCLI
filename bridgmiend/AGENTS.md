@@ -37,7 +37,7 @@
 | Agent | Status   | Branch   | Task                                                | Last commit | Claimed files |
 | ----- | -------- | -------- | --------------------------------------------------- | ----------- | ------------- |
 | A     | `idle`   | `agent-a` | —                                                 | —           | —             |
-| B     | `done`   | `agent-b` | Hermes Agent integration plugin                      | c747aac     | —             |
+| B     | `done`   | `agent-b` | Hermes: 45 tools + bidirectional skills sync        | fccd751     | —             |
 
 **Status values:** `idle` · `working` · `blocked` · `merging` · `done`
 
@@ -48,9 +48,9 @@ quick scanning.)
 
 | When (UTC) | Agent | What changed                                          | Commit    |
 | ---------- | ----- | ----------------------------------------------------- | --------- |
+| 2026-06-06T20:15:00Z | B     | Hermes: 45 tools + bidirectional skills sync (Ferrox<->Hermes) | fccd751 |
 | 2026-06-06T19:30:00Z | B     | Hermes Agent integration plugin (22 tools + skill)   | c747aac   |
 | 2026-06-06T18:45:00Z | B     | Ruff format; merge main; quality gates pass           | 5a0e907   |
-| —          | —     | (none yet)                                            | —         |
 
 ## Claims ledger (transient)
 
