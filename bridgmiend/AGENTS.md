@@ -37,7 +37,7 @@
 | Agent | Status   | Branch   | Task                                                | Last commit | Claimed files |
 | ----- | -------- | -------- | --------------------------------------------------- | ----------- | ------------- |
 | A     | `idle`   | `agent-a` | —                                                 | —           | —             |
-| B     | `working` | `agent-b` | Review zones: ui/, utils/, docs/ — identify improvements | 85933f1     | —             |
+| B     | `done`   | `agent-b` | Ruff format codebase; tests pass (358/363)          | 5a0e907     | —             |
 
 **Status values:** `idle` · `working` · `blocked` · `merging` · `done`
 
@@ -48,6 +48,7 @@ quick scanning.)
 
 | When (UTC) | Agent | What changed                                          | Commit    |
 | ---------- | ----- | ----------------------------------------------------- | --------- |
+| 2026-06-06T18:45:00Z | B     | Ruff format; merge main; quality gates pass           | 5a0e907   |
 | —          | —     | (none yet)                                            | —         |
 
 ## Claims ledger (transient)
