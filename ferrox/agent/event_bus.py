@@ -10,6 +10,7 @@ from typing import Any, Callable, Optional
 
 class EventType(Enum):
     """Types of agent events."""
+
     THOUGHT = "thought"
     TOOL_CALL = "tool_call"
     TOOL_RESULT = "tool_result"
@@ -24,6 +25,7 @@ class EventType(Enum):
 @dataclass
 class AgentEvent:
     """Represents an event from an agent."""
+
     event_type: EventType
     agent_id: str
     agent_role: str  # "main", "researcher", "coder", "reviewer", "planner", "worker"
@@ -39,7 +41,7 @@ class AgentEvent:
             "agent_role": self.agent_role,
             "timestamp": self.timestamp.isoformat(),
             "data": self.data,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -51,7 +53,7 @@ class AgentEvent:
             agent_role=data["agent_role"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
             data=data["data"],
-            metadata=data.get("metadata", {})
+            metadata=data.get("metadata", {}),
         )
 
 
@@ -167,7 +169,7 @@ class AgentEventBus:
                 "role": event.agent_role,
                 "spawned_at": event.timestamp,
                 "last_activity": event.timestamp,
-                "status": "active"
+                "status": "active",
             }
         elif event.event_type == EventType.AGENT_TERMINATED:
             if agent_id in self._agent_registry:
@@ -182,14 +184,14 @@ class AgentEventBus:
                 self._agent_registry[agent_id] = {
                     "role": event.agent_role,
                     "last_activity": event.timestamp,
-                    "status": "active"
+                    "status": "active",
                 }
 
     def get_recent_events(
         self,
         agent_id: Optional[str] = None,
         event_type: Optional[EventType] = None,
-        limit: int = 50
+        limit: int = 50,
     ) -> list[AgentEvent]:
         """
         Get recent events, optionally filtered.
@@ -260,7 +262,7 @@ class AgentEventBus:
             filepath: Path to export file
         """
         events_data = [event.to_dict() for event in self._event_history]
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(events_data, f, indent=2)
 
 

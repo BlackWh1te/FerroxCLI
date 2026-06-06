@@ -31,7 +31,9 @@ except ImportError:
 permissions = PermissionEngine()
 
 
-async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, query: str, read_only: bool = True) -> str:
+async def db_query_tool(
+    ctx: RunContext, db_type: str, connection_string: str, query: str, read_only: bool = True
+) -> str:
     """Execute a SQL query on a database. Read-only by default for safety.
 
     Args:
@@ -52,7 +54,10 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
 
             # Check if query is write operation when read_only is True
             query_upper = query.strip().upper()
-            if read_only and any(word in query_upper for word in ["INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER"]):
+            if read_only and any(
+                word in query_upper
+                for word in ["INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER"]
+            ):
                 error_msg = "Write operation not allowed in read-only mode. Set read_only=False and ensure you have permission."
                 span.set_attribute("error", error_msg)
                 if _current_agent:
@@ -61,7 +66,9 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
                 return error_msg
 
             # Write operations require permission
-            if not read_only and not permissions.check_access(connection_string, PermissionAction.WRITE, mode):
+            if not read_only and not permissions.check_access(
+                connection_string, PermissionAction.WRITE, mode
+            ):
                 error_msg = f"Permission denied: database write operations require write access to {connection_string}"
                 span.set_attribute("access", "denied")
                 if _current_agent:
@@ -80,7 +87,9 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
             elif db_type == "mysql":
                 result = await _execute_mysql(connection_string, query)
             else:
-                error_msg = f"Unsupported database type: {db_type}. Supported: sqlite, postgresql, mysql"
+                error_msg = (
+                    f"Unsupported database type: {db_type}. Supported: sqlite, postgresql, mysql"
+                )
                 span.set_attribute("error", error_msg)
                 if _current_agent:
                     _current_agent._log_tool_call("db_query", {"db_type": db_type})
@@ -109,7 +118,9 @@ async def db_query_tool(ctx: RunContext, db_type: str, connection_string: str, q
 
             if _current_agent:
                 _current_agent._log_tool_call("db_query", {"db_type": db_type})
-                _current_agent._log_tool_result("db_query", f"Query completed, {len(result.get('rows', []))} rows", True)
+                _current_agent._log_tool_result(
+                    "db_query", f"Query completed, {len(result.get('rows', []))} rows", True
+                )
 
             return output
 
@@ -179,7 +190,9 @@ async def _execute_mysql(connection_string: str, query: str) -> dict[str, Any]:
     try:
         import mysql.connector
     except ImportError:
-        return {"error": "mysql-connector-python not installed. Run: pip install mysql-connector-python"}
+        return {
+            "error": "mysql-connector-python not installed. Run: pip install mysql-connector-python"
+        }
 
     try:
         conn = mysql.connector.connect(**_parse_mysql_connection_string(connection_string))
@@ -229,13 +242,7 @@ def _parse_mysql_connection_string(conn_str: str) -> dict[str, str]:
     host = host_port[0]
     port = int(host_port[1]) if len(host_port) > 1 else 3306
 
-    return {
-        "user": user,
-        "password": password,
-        "host": host,
-        "port": port,
-        "database": database
-    }
+    return {"user": user, "password": password, "host": host, "port": port, "database": database}
 
 
 async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) -> str:
@@ -244,9 +251,7 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
         span.set_attribute("db_type", db_type)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Schema query is read-only, always allowed
             if format_tool_call:
@@ -313,7 +318,9 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
 
             if _current_agent:
                 _current_agent._log_tool_call("db_schema", {"db_type": db_type})
-                _current_agent._log_tool_result("db_schema", f"Retrieved schema for {len(result.get('rows', []))} items", True)
+                _current_agent._log_tool_result(
+                    "db_schema", f"Retrieved schema for {len(result.get('rows', []))} items", True
+                )
 
             return output
 
@@ -326,7 +333,9 @@ async def db_schema_tool(ctx: RunContext, db_type: str, connection_string: str) 
             return error_msg
 
 
-async def db_migrate_tool(ctx: RunContext, db_type: str, connection_string: str, migration_sql: str, dry_run: bool = True) -> str:
+async def db_migrate_tool(
+    ctx: RunContext, db_type: str, connection_string: str, migration_sql: str, dry_run: bool = True
+) -> str:
     """Execute database migration SQL. Requires write permission. Dry-run by default.
 
     Args:

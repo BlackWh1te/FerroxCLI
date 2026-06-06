@@ -37,7 +37,7 @@
 | Agent | Status   | Branch   | Task                                                | Last commit | Claimed files |
 | ----- | -------- | -------- | --------------------------------------------------- | ----------- | ------------- |
 | A     | `idle`   | `agent-a` | —                                                 | —           | —             |
-| B     | `idle`   | `agent-b` | —                                                 | —           | —             |
+| B     | `working` | `agent-b` | Review zones: ui/, utils/, docs/ — identify improvements | 85933f1     | —             |
 
 **Status values:** `idle` · `working` · `blocked` · `merging` · `done`
 

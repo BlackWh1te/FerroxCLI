@@ -69,7 +69,9 @@ class PostQueue:
         content_hash = self._hash_post(post)
         if content_hash in self._posted_hashes or content_hash in self._queued_hashes:
             return False
-        if post.topic_hash and (post.topic_hash in self._posted_hashes or post.topic_hash in self._queued_hashes):
+        if post.topic_hash and (
+            post.topic_hash in self._posted_hashes or post.topic_hash in self._queued_hashes
+        ):
             return False
 
         self._queued_hashes.add(content_hash)
@@ -164,22 +166,15 @@ class PostQueue:
         posted_this_hour = sum(
             1
             for p in self._history
-            if p.status == "posted"
-            and p.posted_at is not None
-            and p.posted_at > hour_ago
+            if p.status == "posted" and p.posted_at is not None and p.posted_at > hour_ago
         )
         posted_today = sum(
             1
             for p in self._history
-            if p.status == "posted"
-            and p.posted_at is not None
-            and p.posted_at > day_ago
+            if p.status == "posted" and p.posted_at is not None and p.posted_at > day_ago
         )
 
-        return (
-            posted_this_hour < self.max_posts_per_hour
-            and posted_today < self.max_posts_per_day
-        )
+        return posted_this_hour < self.max_posts_per_hour and posted_today < self.max_posts_per_day
 
     @staticmethod
     def _hash_post(post: QueuedPost) -> str:

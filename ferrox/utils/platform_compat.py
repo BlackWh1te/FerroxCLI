@@ -55,7 +55,7 @@ def safe_filename(filename: str) -> str:
     # Limit length
     if len(filename) > 200:
         name, ext = os.path.splitext(filename)
-        filename = name[:200 - len(ext)] + ext
+        filename = name[: 200 - len(ext)] + ext
 
     return filename
 

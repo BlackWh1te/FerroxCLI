@@ -337,7 +337,9 @@ class FerroxAgent:
                     tool_prefix=srv.name,
                 )
                 toolsets.append(ts)
-                self._log_thought(f"[MCP] Registered server '{srv.name}': {cmd} {' '.join(srv.args)}")
+                self._log_thought(
+                    f"[MCP] Registered server '{srv.name}': {cmd} {' '.join(srv.args)}"
+                )
             except Exception as e:
                 self._log_thought(f"[MCP] Skipped server '{srv.name}' due to error: {e}")
 
@@ -481,7 +483,9 @@ class FerroxAgent:
 
             try:
                 self._log_thought(f"Starting task execution with model: {model_id}")
-                self._log_thought(f"User prompt: {user_prompt[:100]}{'...' if len(user_prompt) > 100 else ''}")
+                self._log_thought(
+                    f"User prompt: {user_prompt[:100]}{'...' if len(user_prompt) > 100 else ''}"
+                )
 
                 # Update model if it changed (model_id is usually type:name from cli.py)
                 if ":" in model_id:
@@ -494,6 +498,7 @@ class FerroxAgent:
                 if mode == Mode.SOCIAL:
                     from ..reddit_daemon import get_daemon_status as reddit_daemon_status
                     from ..social_daemon import get_daemon_status as x_daemon_status
+
                     reddit_status = reddit_daemon_status()
                     x_status = x_daemon_status()
                     if reddit_status.get("running") and reddit_status.get("session_valid"):
@@ -530,12 +535,18 @@ class FerroxAgent:
                         results = DDGS().text(search_query, max_results=5)
 
                         if results:
-                            self._log_thought(f"Successfully retrieved {len(results)} search results")
+                            self._log_thought(
+                                f"Successfully retrieved {len(results)} search results"
+                            )
                             # Log each result individually for real-time visibility
                             for idx, r in enumerate(results, 1):
-                                title = r.get('title', 'No title')
-                                url = r.get('href', '')
-                                body = r.get('body', '')[:100] + '...' if len(r.get('body', '')) > 100 else r.get('body', '')
+                                title = r.get("title", "No title")
+                                url = r.get("href", "")
+                                body = (
+                                    r.get("body", "")[:100] + "..."
+                                    if len(r.get("body", "")) > 100
+                                    else r.get("body", "")
+                                )
                                 self._log_thought(f"Result {idx}: {title}")
                                 self._log_thought(f"  URL: {url}")
                                 self._log_thought(f"  Preview: {body}")
@@ -555,11 +566,17 @@ class FerroxAgent:
                                 f"{search_text}\n"
                                 f"Based on the search results above, answer the user's question:\n{user_prompt}"
                             )
-                            self._log_thought("Integrating search results into context for response generation")
+                            self._log_thought(
+                                "Integrating search results into context for response generation"
+                            )
                         else:
-                            self._log_thought("No search results found - will proceed without web data")
+                            self._log_thought(
+                                "No search results found - will proceed without web data"
+                            )
                     except Exception as e:
-                        self._log_thought(f"Pre-search failed: {e} - proceeding with original prompt")
+                        self._log_thought(
+                            f"Pre-search failed: {e} - proceeding with original prompt"
+                        )
                         # Continue with original prompt if search fails
 
                 # Convert history to pydantic-ai format
@@ -578,13 +595,19 @@ class FerroxAgent:
 
                 # Robustly get result data
                 if hasattr(result, "data"):
-                    self._log_thought(f"Extracting result data (length: {len(str(result.data))} chars)")
+                    self._log_thought(
+                        f"Extracting result data (length: {len(str(result.data))} chars)"
+                    )
                     return result.data
                 elif hasattr(result, "message") and hasattr(result.message, "content"):
-                    self._log_thought(f"Extracting message content (length: {len(result.message.content)} chars)")
+                    self._log_thought(
+                        f"Extracting message content (length: {len(result.message.content)} chars)"
+                    )
                     return result.message.content
                 else:
-                    self._log_thought(f"Converting result to string (length: {len(str(result))} chars)")
+                    self._log_thought(
+                        f"Converting result to string (length: {len(str(result))} chars)"
+                    )
                     return str(result)
 
             except ModelNotFoundError as e:
@@ -608,13 +631,19 @@ class FerroxAgent:
 
                 # Re-raise as appropriate exception
                 if "authentication" in error_msg.lower() or "api key" in error_msg.lower():
-                    raise ProviderError(f"Authentication failed: {error_msg}", {"model": model_id}) from e
+                    raise ProviderError(
+                        f"Authentication failed: {error_msg}", {"model": model_id}
+                    ) from e
                 elif "rate limit" in error_msg.lower():
-                    raise ProviderError(f"Rate limit exceeded: {error_msg}", {"model": model_id}) from e
+                    raise ProviderError(
+                        f"Rate limit exceeded: {error_msg}", {"model": model_id}
+                    ) from e
                 elif "network" in error_msg.lower() or "connection" in error_msg.lower():
                     raise NetworkError(f"Network error: {error_msg}", {"model": model_id}) from e
                 else:
-                    raise AgentError(f"Agent execution failed: {error_msg}", {"model": model_id}) from e
+                    raise AgentError(
+                        f"Agent execution failed: {error_msg}", {"model": model_id}
+                    ) from e
 
     def _log(self, entry: dict):
         self.session_logs.append(entry)
@@ -624,17 +653,20 @@ class FerroxAgent:
 
         # Publish to event bus for real-time monitoring
         with contextlib.suppress(Exception):
-            event_bus.publish_sync(AgentEvent(
-                event_type=EventType.THOUGHT,
-                agent_id=self.agent_id,
-                agent_role=self.agent_role,
-                timestamp=datetime.now(),
-                data={"content": content}
-            ))
+            event_bus.publish_sync(
+                AgentEvent(
+                    event_type=EventType.THOUGHT,
+                    agent_id=self.agent_id,
+                    agent_role=self.agent_role,
+                    timestamp=datetime.now(),
+                    data={"content": content},
+                )
+            )
 
         # Real-time display of agent reasoning
         with contextlib.suppress(Exception):
             from ..ui.output import format_agent_thought
+
             format_agent_thought(content)
 
     def _log_tool_call(self, name: str, args: dict):
@@ -651,17 +683,20 @@ class FerroxAgent:
 
         # Publish to event bus for real-time monitoring
         with contextlib.suppress(Exception):
-            event_bus.publish_sync(AgentEvent(
-                event_type=EventType.TOOL_CALL,
-                agent_id=self.agent_id,
-                agent_role=self.agent_role,
-                timestamp=datetime.now(),
-                data={"tool_name": name, "args": args, "args_summary": args_summary}
-            ))
+            event_bus.publish_sync(
+                AgentEvent(
+                    event_type=EventType.TOOL_CALL,
+                    agent_id=self.agent_id,
+                    agent_role=self.agent_role,
+                    timestamp=datetime.now(),
+                    data={"tool_name": name, "args": args, "args_summary": args_summary},
+                )
+            )
 
         # Real-time display of tool calls
         with contextlib.suppress(Exception):
             from ..ui.output import format_tool_call
+
             format_tool_call(name, args)
 
     def _log_tool_result(self, name: str, result: str, success: bool):
@@ -683,18 +718,20 @@ class FerroxAgent:
 
         # Publish to event bus for real-time monitoring
         with contextlib.suppress(Exception):
-            event_bus.publish_sync(AgentEvent(
-                event_type=EventType.TOOL_RESULT,
-                agent_id=self.agent_id,
-                agent_role=self.agent_role,
-                timestamp=datetime.now(),
-                data={
-                    "tool_name": name,
-                    "content": result,
-                    "success": success,
-                    "result_preview": result_preview
-                }
-            ))
+            event_bus.publish_sync(
+                AgentEvent(
+                    event_type=EventType.TOOL_RESULT,
+                    agent_id=self.agent_id,
+                    agent_role=self.agent_role,
+                    timestamp=datetime.now(),
+                    data={
+                        "tool_name": name,
+                        "content": result,
+                        "success": success,
+                        "result_preview": result_preview,
+                    },
+                )
+            )
 
 
 def get_current_session_logs():

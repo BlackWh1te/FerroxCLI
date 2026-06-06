@@ -19,6 +19,7 @@ tracer = trace.get_tracer(__name__)
 @dataclass
 class ProjectConfig:
     """Detected project configuration."""
+
     config_type: str  # "package.json", "pyproject.toml", "Cargo.toml", etc.
     path: str
     data: dict[str, Any] = field(default_factory=dict)
@@ -30,6 +31,7 @@ class ProjectConfig:
 @dataclass
 class BuildSystem:
     """Detected build system."""
+
     name: str  # "npm", "yarn", "pnpm", "cargo", "pip", "make", "gradle", "maven"
     config_path: str
     build_command: str = ""
@@ -40,6 +42,7 @@ class BuildSystem:
 @dataclass
 class ProjectContext:
     """Complete project context analysis."""
+
     project_root: str
     project_type: str  # "monorepo", "single", "workspace"
     language: str  # "python", "javascript", "rust", "go", "java", etc.
@@ -98,7 +101,7 @@ class ProjectContextAnalyzer:
                 build_systems=build_systems,
                 dependency_graph=dependency_graph,
                 workspace_structure=workspace_structure,
-                important_files=important_files
+                important_files=important_files,
             )
 
             return self.context
@@ -113,7 +116,7 @@ class ProjectContextAnalyzer:
             "pnpm-workspace.yaml",
             "packages/",
             "apps/",
-            "libs/"
+            "libs/",
         ]
 
         for indicator in monorepo_indicators:
@@ -123,7 +126,7 @@ class ProjectContextAnalyzer:
         # Check for workspace indicators
         workspace_indicators = [
             "go.work",
-            "Cargo.toml"  # Rust workspaces
+            "Cargo.toml",  # Rust workspaces
         ]
 
         for indicator in workspace_indicators:
@@ -143,7 +146,7 @@ class ProjectContextAnalyzer:
             "java": ["pom.xml", "build.gradle", "gradlew"],
             "ruby": ["Gemfile", "Gemfile.lock"],
             "php": ["composer.json", "composer.lock"],
-            "csharp": ["*.csproj", "*.sln"]
+            "csharp": ["*.csproj", "*.sln"],
         }
 
         language_scores = defaultdict(int)
@@ -182,7 +185,7 @@ class ProjectContextAnalyzer:
             "pom.xml": "xml",
             "build.gradle": "gradle",
             "Gemfile": "ruby",
-            "composer.json": "json"
+            "composer.json": "json",
         }
 
         for config_file, config_type in config_patterns.items():
@@ -214,10 +217,12 @@ class ProjectContextAnalyzer:
                     # Use tomllib for Python 3.11+, otherwise try toml package
                     try:
                         import tomllib
+
                         data = tomllib.load(f)
                     except ImportError:
                         try:
                             import toml
+
                             data = toml.load(f)
                         except ImportError:
                             # Fallback: read as text
@@ -249,7 +254,7 @@ class ProjectContextAnalyzer:
                 data=data,
                 dependencies=dependencies,
                 dev_dependencies=dev_dependencies,
-                scripts=scripts
+                scripts=scripts,
             )
         except Exception:
             return None
@@ -264,57 +269,67 @@ class ProjectContextAnalyzer:
                 lock_files = {
                     "package-lock.json": "npm",
                     "yarn.lock": "yarn",
-                    "pnpm-lock.yaml": "pnpm"
+                    "pnpm-lock.yaml": "pnpm",
                 }
 
                 for lock_file, system_name in lock_files.items():
                     lock_path = self.project_root / lock_file
                     if lock_path.exists():
-                        build_systems.append(BuildSystem(
-                            name=system_name,
-                            config_path=str(lock_path),
-                            build_command=config.scripts.get("build", ""),
-                            test_command=config.scripts.get("test", ""),
-                            install_command=f"{system_name} install"
-                        ))
+                        build_systems.append(
+                            BuildSystem(
+                                name=system_name,
+                                config_path=str(lock_path),
+                                build_command=config.scripts.get("build", ""),
+                                test_command=config.scripts.get("test", ""),
+                                install_command=f"{system_name} install",
+                            )
+                        )
                         break
 
             elif config.config_type == "Cargo.toml":
-                build_systems.append(BuildSystem(
-                    name="cargo",
-                    config_path=config.path,
-                    build_command="cargo build",
-                    test_command="cargo test",
-                    install_command="cargo build"
-                ))
+                build_systems.append(
+                    BuildSystem(
+                        name="cargo",
+                        config_path=config.path,
+                        build_command="cargo build",
+                        test_command="cargo test",
+                        install_command="cargo build",
+                    )
+                )
 
             elif config.config_type == "pyproject.toml":
-                build_systems.append(BuildSystem(
-                    name="pip",
-                    config_path=config.path,
-                    build_command="python -m build",
-                    test_command="pytest",
-                    install_command="pip install -e ."
-                ))
+                build_systems.append(
+                    BuildSystem(
+                        name="pip",
+                        config_path=config.path,
+                        build_command="python -m build",
+                        test_command="pytest",
+                        install_command="pip install -e .",
+                    )
+                )
 
             elif config.config_type == "go.mod":
-                build_systems.append(BuildSystem(
-                    name="go",
-                    config_path=config.path,
-                    build_command="go build",
-                    test_command="go test",
-                    install_command="go mod download"
-                ))
+                build_systems.append(
+                    BuildSystem(
+                        name="go",
+                        config_path=config.path,
+                        build_command="go build",
+                        test_command="go test",
+                        install_command="go mod download",
+                    )
+                )
 
         # Check for Makefile
         if (self.project_root / "Makefile").exists():
-            build_systems.append(BuildSystem(
-                name="make",
-                config_path=str(self.project_root / "Makefile"),
-                build_command="make build",
-                test_command="make test",
-                install_command="make install"
-            ))
+            build_systems.append(
+                BuildSystem(
+                    name="make",
+                    config_path=str(self.project_root / "Makefile"),
+                    build_command="make build",
+                    test_command="make test",
+                    install_command="make install",
+                )
+            )
 
         return build_systems
 
@@ -331,13 +346,7 @@ class ProjectContextAnalyzer:
 
     def _analyze_workspace_structure(self) -> dict[str, Any]:
         """Analyze workspace/monorepo structure."""
-        structure = {
-            "type": "flat",
-            "packages": [],
-            "apps": [],
-            "libs": [],
-            "services": []
-        }
+        structure = {"type": "flat", "packages": [], "apps": [], "libs": [], "services": []}
 
         # Check for common monorepo structures
         for subdir in ["packages", "apps", "libs", "services"]:
@@ -368,7 +377,7 @@ class ProjectContextAnalyzer:
             "Jenkinsfile",
             "Makefile",
             "*.config.js",
-            "*.config.ts"
+            "*.config.ts",
         ]
 
         important_files = []

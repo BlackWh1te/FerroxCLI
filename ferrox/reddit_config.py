@@ -18,14 +18,13 @@ class RedditCredentials(BaseModel):
     client_id: str = Field(default="", description="Reddit API app client ID")
     client_secret: str = Field(default="", description="Reddit API app client secret")
     user_agent: str = Field(
-        default="FerroxBot/1.0 by /u/ (github.com/ferrox)",
-        description="PRAW user_agent string"
+        default="FerroxBot/1.0 by /u/ (github.com/ferrox)", description="PRAW user_agent string"
     )
 
     # Cookie storage (used after first browser login)
     cookie_file: str = Field(
         default_factory=lambda: str(Path.home() / ".ferrox" / "reddit_cookies.json"),
-        description="Path to cookie file for session persistence"
+        description="Path to cookie file for session persistence",
     )
 
 
@@ -45,7 +44,7 @@ class NightMode(BaseModel):
 
     enabled: bool = Field(default=True)
     start_hour: int = Field(default=1, ge=0, le=23)  # 01:00
-    end_hour: int = Field(default=7, ge=0, le=23)   # 07:00
+    end_hour: int = Field(default=7, ge=0, le=23)  # 07:00
 
     @field_validator("end_hour")
     @classmethod
@@ -173,14 +172,16 @@ class RedditConfig(BaseModel):
     # Strategy text (what the bot should do)
     strategy: str = Field(
         default="Post interesting tech news to relevant subreddits. Keep it casual and engaging. Comment on posts in target communities.",
-        description="Natural language strategy for the bot"
+        description="Natural language strategy for the bot",
     )
 
     # News sources for content
-    news_sources: list[str] = Field(default_factory=lambda: [
-        "https://news.ycombinator.com/rss",
-        "https://techcrunch.com/feed/",
-    ])
+    news_sources: list[str] = Field(
+        default_factory=lambda: [
+            "https://news.ycombinator.com/rss",
+            "https://techcrunch.com/feed/",
+        ]
+    )
 
 
 # Default configs for account types
@@ -213,7 +214,7 @@ DEFAULT_ESTABLISHED_LIMITS = RateLimits(
 
 
 def get_rate_limits_for_account_type(
-    account_type: Literal["new", "warming", "established", "legacy"]
+    account_type: Literal["new", "warming", "established", "legacy"],
 ) -> RateLimits:
     """Get appropriate rate limits for account type.
 
@@ -248,6 +249,7 @@ def load_reddit_state() -> RedditState:
 
     try:
         import json
+
         with open(STATE_FILE, encoding="utf-8") as f:
             data = json.load(f)
         return RedditState(**data)
@@ -267,6 +269,7 @@ def save_reddit_state(state: RedditState) -> bool:
     try:
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
         import json
+
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state.model_dump(), f, indent=2, default=str)
         return True

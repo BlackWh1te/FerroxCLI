@@ -16,6 +16,7 @@ from pydantic_ai import RunContext
 # Import tracer
 try:
     from opentelemetry import trace
+
     tracer = trace.get_tracer(__name__)
 except Exception:
     tracer = None
@@ -74,10 +75,10 @@ class TokenBucket:
 
 
 # Global rate limiters
-_post_bucket = TokenBucket(rate=0.05, burst=2)     # 1 post per 20 seconds max
+_post_bucket = TokenBucket(rate=0.05, burst=2)  # 1 post per 20 seconds max
 _comment_bucket = TokenBucket(rate=0.05, burst=2)  # 1 comment per 20 seconds max
-_search_bucket = TokenBucket(rate=0.5, burst=5)    # 1 search per 2 seconds max
-_read_bucket = TokenBucket(rate=1.0, burst=10)    # Read operations
+_search_bucket = TokenBucket(rate=0.5, burst=5)  # 1 search per 2 seconds max
+_read_bucket = TokenBucket(rate=1.0, burst=10)  # Read operations
 
 
 def _get_praw_client(config: RedditConfig):
@@ -90,8 +91,7 @@ def _get_praw_client(config: RedditConfig):
         import praw
     except ImportError:
         raise ToolExecutionError(
-            "praw not installed. Run: pip install praw",
-            {"action": "get_praw_client"}
+            "praw not installed. Run: pip install praw", {"action": "get_praw_client"}
         ) from None
 
     creds = config.credentials
@@ -120,12 +120,12 @@ def _get_praw_client(config: RedditConfig):
         raise ToolExecutionError(
             "PRAW OAuth failed and cookie fallback requires browser mode. "
             "Run /reddit login via browser, or provide client_id/client_secret.",
-            {"action": "get_praw_client", "fallback": "browser_cookie"}
+            {"action": "get_praw_client", "fallback": "browser_cookie"},
         )
 
     raise ToolExecutionError(
         "No valid Reddit credentials. Provide OAuth details or run /reddit login.",
-        {"action": "get_praw_client"}
+        {"action": "get_praw_client"},
     )
 
 
@@ -140,7 +140,7 @@ def _get_browser_driver():
     except ImportError:
         raise ToolExecutionError(
             "Playwright not installed. Run: pip install playwright",
-            {"action": "get_browser_driver"}
+            {"action": "get_browser_driver"},
         ) from None
 
     # Return a factory; actual page creation is async and done per-call
@@ -270,11 +270,11 @@ async def reddit_check_account_health_tool(ctx: RunContext) -> str:
             output = f"""Account Health Check Results:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Account Type: {account_type.upper()}
-Username: /u/{getattr(me, 'name', 'unknown')}
+Username: /u/{getattr(me, "name", "unknown")}
 Link Karma: {link_karma:,}
 Comment Karma: {comment_karma:,}
 Total Karma: {total_karma:,}
-Account Age: {account_age_days if created_utc else 'unknown'} days
+Account Age: {account_age_days if created_utc else "unknown"} days
 
 Today's Usage:
   Posts: {state.posts_today}/{limits.max_posts_per_day}
@@ -285,7 +285,7 @@ Limits Applied:
   Max posts/day: {limits.max_posts_per_day}
   Max posts/hour: {limits.max_posts_per_hour}
   Max comments/day: {limits.max_comments_per_day}
-  Draft mode: {'ENABLED (approval required)' if config.content.draft_mode else 'DISABLED (auto-post)'}
+  Draft mode: {"ENABLED (approval required)" if config.content.draft_mode else "DISABLED (auto-post)"}
 
 Recommendations:
 """
@@ -363,7 +363,9 @@ async def search_subreddit_tool(
             span.set_attribute("query", query)
             span.set_attribute("max_results", max_results)
 
-    _log_tool_call("search_subreddit", {"subreddit": subreddit, "query": query, "max_results": max_results})
+    _log_tool_call(
+        "search_subreddit", {"subreddit": subreddit, "query": query, "max_results": max_results}
+    )
 
     # Rate limit check
     await _search_bucket.acquire()
@@ -449,7 +451,11 @@ async def post_submission_tool(
         if not is_safe:
             violations_str = "; ".join(violations)
             _log_tool_result("post_submission", f"Moderation failed: {violations_str}", False)
-            return {"success": False, "data": None, "message": f"MODERATION FAILED:\n{violations_str}\n\nPlease revise content."}
+            return {
+                "success": False,
+                "data": None,
+                "message": f"MODERATION FAILED:\n{violations_str}\n\nPlease revise content.",
+            }
 
         # Validate post length (Reddit title max 300)
         is_valid, effective_len, length_msg = validate_tweet_length(title, max_length=300)
@@ -516,7 +522,11 @@ async def post_submission_tool(
         output += f"Permalink: https://reddit.com{submission.permalink}"
 
         _log_tool_result("post_submission", f"Post {submission.id} posted", True)
-        return {"success": True, "data": {"post_id": submission.id, "permalink": submission.permalink}, "message": output}
+        return {
+            "success": True,
+            "data": {"post_id": submission.id, "permalink": submission.permalink},
+            "message": output,
+        }
 
     except Exception as e:
         # Update failure tracking
@@ -551,7 +561,9 @@ async def post_comment_tool(
             span.set_attribute("text_length", len(text))
             span.set_attribute("dry_run", dry_run)
 
-    _log_tool_call("post_comment", {"post_id": post_id, "text_length": len(text), "dry_run": dry_run})
+    _log_tool_call(
+        "post_comment", {"post_id": post_id, "text_length": len(text), "dry_run": dry_run}
+    )
 
     try:
         config = RedditConfig()
@@ -575,13 +587,21 @@ async def post_comment_tool(
         if not is_safe:
             violations_str = "; ".join(violations)
             _log_tool_result("post_comment", f"Moderation failed: {violations_str}", False)
-            return {"success": False, "data": None, "message": f"MODERATION FAILED:\n{violations_str}\n\nPlease revise content."}
+            return {
+                "success": False,
+                "data": None,
+                "message": f"MODERATION FAILED:\n{violations_str}\n\nPlease revise content.",
+            }
 
         # Draft mode check
         if config.content.draft_mode and not dry_run:
             output = "DRAFT MODE - Comment ready for approval:\n"
             output += f"Post ID: {post_id}\n"
-            output += f"Comment: {sanitized[:200]}...\n" if len(sanitized) > 200 else f"Comment: {sanitized}\n"
+            output += (
+                f"Comment: {sanitized[:200]}...\n"
+                if len(sanitized) > 200
+                else f"Comment: {sanitized}\n"
+            )
             output += "\nType 'APPROVE' to post, or revise and try again."
             _log_tool_result("post_comment", "Draft presented for approval", True)
             return {"success": True, "data": {"draft": True}, "message": output}
@@ -589,7 +609,11 @@ async def post_comment_tool(
         if dry_run:
             output = "DRY RUN - Comment would be posted:\n"
             output += f"Post ID: {post_id}\n"
-            output += f"Comment: {sanitized[:200]}...\n" if len(sanitized) > 200 else f"Comment: {sanitized}\n"
+            output += (
+                f"Comment: {sanitized[:200]}...\n"
+                if len(sanitized) > 200
+                else f"Comment: {sanitized}\n"
+            )
             output += "\nUse dry_run=False to actually post."
             _log_tool_result("post_comment", "Dry run preview", True)
             return {"success": True, "data": {"dry_run": True}, "message": output}
@@ -604,12 +628,14 @@ async def post_comment_tool(
 
         # Update state
         state.comments_today += 1
-        state.recent_comments.append({
-            "id": comment.id,
-            "body": sanitized[:100],
-            "post_id": post_id,
-            "posted_at": datetime.now().isoformat(),
-        })
+        state.recent_comments.append(
+            {
+                "id": comment.id,
+                "body": sanitized[:100],
+                "post_id": post_id,
+                "posted_at": datetime.now().isoformat(),
+            }
+        )
         state.consecutive_failures = 0
         save_reddit_state(state)
 
@@ -618,7 +644,11 @@ async def post_comment_tool(
         output += f"Permalink: https://reddit.com{comment.permalink}"
 
         _log_tool_result("post_comment", f"Comment {comment.id} posted", True)
-        return {"success": True, "data": {"comment_id": comment.id, "permalink": comment.permalink}, "message": output}
+        return {
+            "success": True,
+            "data": {"comment_id": comment.id, "permalink": comment.permalink},
+            "message": output,
+        }
 
     except Exception as e:
         state = load_reddit_state()
@@ -757,7 +787,9 @@ async def reddit_check_visibility_tool(ctx: RunContext, post_id: str) -> dict[st
                 "message": f"Post {post_id} is visible and indexed.",
             }
         else:
-            _log_tool_result("check_visibility", f"Post {post_id} not visible - possible shadowban", False)
+            _log_tool_result(
+                "check_visibility", f"Post {post_id} not visible - possible shadowban", False
+            )
             return {
                 "success": True,
                 "data": {"visible": False, "shadowban_detected": shadowban_detected},
@@ -799,7 +831,11 @@ async def delete_submission_tool(ctx: RunContext, post_id: str) -> dict[str, Any
         save_reddit_state(state)
 
         _log_tool_result("delete_submission", f"Deleted {post_id}", True)
-        return {"success": True, "data": {"deleted": True}, "message": f"Deleted submission {post_id}"}
+        return {
+            "success": True,
+            "data": {"deleted": True},
+            "message": f"Deleted submission {post_id}",
+        }
 
     except Exception as e:
         _log_tool_result("delete_submission", str(e), False)
@@ -837,13 +873,15 @@ async def get_inbox_tool(ctx: RunContext, limit: int = 20) -> str:
             body = getattr(item, "body", getattr(item, "message", ""))
             subject = getattr(item, "subject", "(no subject)")
 
-            messages.append({
-                "type": msg_type,
-                "author": author_name,
-                "subject": subject,
-                "body": body[:200],
-                "id": item.id,
-            })
+            messages.append(
+                {
+                    "type": msg_type,
+                    "author": author_name,
+                    "subject": subject,
+                    "body": body[:200],
+                    "id": item.id,
+                }
+            )
 
         output = f"Unread Inbox ({len(messages)} items):\n"
         output += "=" * 60 + "\n\n"
@@ -851,7 +889,9 @@ async def get_inbox_tool(ctx: RunContext, limit: int = 20) -> str:
         for i, msg in enumerate(messages, 1):
             output += f"{i}. [{msg['type']}] from /u/{msg['author']}\n"
             output += f"   Subject: {msg['subject']}\n"
-            output += f"   {msg['body'][:150]}...\n" if len(msg['body']) > 150 else f"   {msg['body']}\n"
+            output += (
+                f"   {msg['body'][:150]}...\n" if len(msg["body"]) > 150 else f"   {msg['body']}\n"
+            )
             output += f"   ID: {msg['id']}\n\n"
 
         _log_tool_result("get_inbox", f"Retrieved {len(messages)} items", True)

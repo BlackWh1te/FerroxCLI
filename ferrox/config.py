@@ -23,7 +23,9 @@ class McpServerConfig(BaseModel):
     name: str = Field(description="Logical name for this MCP server")
     command: str = Field(description="Executable command to start the server (e.g. 'npx')")
     args: list[str] = Field(default_factory=list, description="Arguments passed to the command")
-    env: Optional[dict[str, str]] = Field(default=None, description="Optional environment variables")
+    env: Optional[dict[str, str]] = Field(
+        default=None, description="Optional environment variables"
+    )
     timeout: float = Field(default=30, description="Server startup timeout in seconds")
     enabled: bool = Field(default=True, description="Whether this server is enabled")
 
@@ -43,9 +45,7 @@ class FerroxConfig(BaseModel):
     social: Optional[SocialConfig] = Field(
         default=None, description="X Bot social media configuration"
     )
-    reddit: Optional[RedditConfig] = Field(
-        default=None, description="Reddit Bot configuration"
-    )
+    reddit: Optional[RedditConfig] = Field(default=None, description="Reddit Bot configuration")
     mcp_servers: list[McpServerConfig] = Field(
         default_factory=list, description="External MCP servers (Playwright, Fetch, etc.)"
     )
@@ -157,9 +157,13 @@ def load_config() -> Optional[FerroxConfig]:
         return FerroxConfig(**data)
 
     except json.JSONDecodeError as e:
-        raise ConfigurationError(f"Invalid JSON in config file: {e}", {"file": str(CONFIG_FILE)}) from e
+        raise ConfigurationError(
+            f"Invalid JSON in config file: {e}", {"file": str(CONFIG_FILE)}
+        ) from e
     except ValidationError as e:
-        raise ConfigurationError(f"Config validation failed: {e.message}", {"details": e.details}) from e
+        raise ConfigurationError(
+            f"Config validation failed: {e.message}", {"details": e.details}
+        ) from e
     except PermissionError as e:
         raise ConfigurationError(
             f"Permission denied reading config: {e}", {"file": str(CONFIG_FILE)}

@@ -24,13 +24,13 @@ from .utils.content_generator import (
     fetch_news_topics,
     generate_x_tweet,
 )
-from .utils.post_queue import PostQueue, QueuedPost
 
 # Platform compatibility
 from .utils.platform_compat import (
     LockFileDaemon,
     managed_event_loop,
 )
+from .utils.post_queue import PostQueue, QueuedPost
 
 # Tools (imported dynamically to avoid circular deps)
 
@@ -215,6 +215,7 @@ class SocialBotDaemon:
 
             # Live tweet via tool
             from pydantic_ai import RunContext
+
             from .agent.tools_social import post_tweet_tool
 
             ctx = RunContext({})
@@ -295,6 +296,7 @@ class SocialBotDaemon:
 
         # Write PID
         import os
+
         self.lock.start(os.getpid())
 
         # Update state

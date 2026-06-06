@@ -57,10 +57,11 @@ class NotificationManager:
         notification_type: NotificationType = NotificationType.INFO,
         action_label: Optional[str] = None,
         action_callback: Optional[Callable] = None,
-        **metadata
+        **metadata,
     ) -> Notification:
         """Add a new notification."""
         import uuid
+
         notification = Notification(
             id=str(uuid.uuid4())[:8],
             title=title,
@@ -68,14 +69,14 @@ class NotificationManager:
             notification_type=notification_type,
             action_label=action_label,
             action_callback=action_callback,
-            metadata=metadata
+            metadata=metadata,
         )
 
         self.notifications.insert(0, notification)
 
         # Trim if over limit
         if len(self.notifications) > self.max_notifications:
-            self.notifications = self.notifications[:self.max_notifications]
+            self.notifications = self.notifications[: self.max_notifications]
 
         # Trigger callback
         if self.on_new_notification:
@@ -99,13 +100,15 @@ class NotificationManager:
         """Add an info notification."""
         return self.add_notification(title, message, NotificationType.INFO, **kwargs)
 
-    def add_job_complete(self, job_id: str, result: str = "Job completed successfully") -> Notification:
+    def add_job_complete(
+        self, job_id: str, result: str = "Job completed successfully"
+    ) -> Notification:
         """Add a job completion notification."""
         return self.add_notification(
             title="Job Complete",
             message=f"Job {job_id}: {result}",
             notification_type=NotificationType.JOB_COMPLETE,
-            metadata={"job_id": job_id}
+            metadata={"job_id": job_id},
         )
 
     def add_job_failed(self, job_id: str, error: str) -> Notification:
@@ -114,7 +117,7 @@ class NotificationManager:
             title="Job Failed",
             message=f"Job {job_id}: {error}",
             notification_type=NotificationType.JOB_FAILED,
-            metadata={"job_id": job_id, "error": error}
+            metadata={"job_id": job_id, "error": error},
         )
 
     def add_agent_status(self, agent_id: str, status: str) -> Notification:
@@ -123,7 +126,7 @@ class NotificationManager:
             title="Agent Status Update",
             message=f"Agent {agent_id}: {status}",
             notification_type=NotificationType.AGENT_STATUS,
-            metadata={"agent_id": agent_id, "status": status}
+            metadata={"agent_id": agent_id, "status": status},
         )
 
     def get_notification(self, notification_id: str) -> Optional[Notification]:
@@ -335,8 +338,11 @@ def get_unread_count() -> int:
 
 
 # Convenience function for job monitoring
-def monitor_job(job_id: str, coro, on_complete: Optional[Callable] = None, on_error: Optional[Callable] = None):
+def monitor_job(
+    job_id: str, coro, on_complete: Optional[Callable] = None, on_error: Optional[Callable] = None
+):
     """Monitor an async job and send notifications."""
+
     async def wrapper():
         try:
             result = await coro

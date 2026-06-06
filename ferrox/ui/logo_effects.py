@@ -12,53 +12,128 @@ from .logo_config import ColorScheme
 
 PALETTES: dict[ColorScheme, list[str]] = {
     ColorScheme.FIRE: [
-        "#ff0000", "#ff1a00", "#ff3300", "#ff4d00", "#ff6600",
-        "#ff8000", "#ff9900", "#ffb300", "#ffcc00", "#ffe600", "#ffff00",
+        "#ff0000",
+        "#ff1a00",
+        "#ff3300",
+        "#ff4d00",
+        "#ff6600",
+        "#ff8000",
+        "#ff9900",
+        "#ffb300",
+        "#ffcc00",
+        "#ffe600",
+        "#ffff00",
     ],
     ColorScheme.CYBER: [
-        "#00ffff", "#1affff", "#33ffff", "#ff00ff", "#ff1aff",
-        "#ff33ff", "#00ff00", "#1aff1a", "#33ff33", "#00ff80", "#00ffcc",
+        "#00ffff",
+        "#1affff",
+        "#33ffff",
+        "#ff00ff",
+        "#ff1aff",
+        "#ff33ff",
+        "#00ff00",
+        "#1aff1a",
+        "#33ff33",
+        "#00ff80",
+        "#00ffcc",
     ],
     ColorScheme.OCEAN: [
-        "#000080", "#0000b3", "#0000e6", "#0040ff", "#0080ff",
-        "#00bfff", "#00ffff", "#80ffff", "#b3ffff", "#e6ffff", "#ffffff",
+        "#000080",
+        "#0000b3",
+        "#0000e6",
+        "#0040ff",
+        "#0080ff",
+        "#00bfff",
+        "#00ffff",
+        "#80ffff",
+        "#b3ffff",
+        "#e6ffff",
+        "#ffffff",
     ],
     ColorScheme.FOREST: [
-        "#006400", "#008000", "#009600", "#00b300", "#00cc00",
-        "#00e600", "#1aff1a", "#4dff4d", "#80ff80", "#b3ffb3", "#ccff00",
+        "#006400",
+        "#008000",
+        "#009600",
+        "#00b300",
+        "#00cc00",
+        "#00e600",
+        "#1aff1a",
+        "#4dff4d",
+        "#80ff80",
+        "#b3ffb3",
+        "#ccff00",
     ],
     ColorScheme.SUNSET: [
-        "#4b0082", "#6a0dad", "#8b00ff", "#ff00ff", "#ff1493",
-        "#ff0066", "#ff3300", "#ff6600", "#ff9900", "#ffcc00", "#ffeb3b",
+        "#4b0082",
+        "#6a0dad",
+        "#8b00ff",
+        "#ff00ff",
+        "#ff1493",
+        "#ff0066",
+        "#ff3300",
+        "#ff6600",
+        "#ff9900",
+        "#ffcc00",
+        "#ffeb3b",
     ],
     ColorScheme.MONOCHROME: [
-        "#000000", "#1a1a1a", "#333333", "#4d4d4d", "#666666",
-        "#808080", "#999999", "#b3b3b3", "#cccccc", "#e6e6e6", "#ffffff",
+        "#000000",
+        "#1a1a1a",
+        "#333333",
+        "#4d4d4d",
+        "#666666",
+        "#808080",
+        "#999999",
+        "#b3b3b3",
+        "#cccccc",
+        "#e6e6e6",
+        "#ffffff",
     ],
     ColorScheme.RAINBOW: [
-        "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff",
-        "#4b0082", "#9400d3", "#ff1493", "#ff0000",
+        "#ff0000",
+        "#ff7f00",
+        "#ffff00",
+        "#00ff00",
+        "#0000ff",
+        "#4b0082",
+        "#9400d3",
+        "#ff1493",
+        "#ff0000",
     ],
     ColorScheme.GOLD: [
-        "#b8860b", "#daa520", "#ffd700", "#ffdf00", "#ffea00",
-        "#ffff00", "#fffacd", "#fff8dc", "#ffec8b", "#ffd700", "#ffae00",
+        "#b8860b",
+        "#daa520",
+        "#ffd700",
+        "#ffdf00",
+        "#ffea00",
+        "#ffff00",
+        "#fffacd",
+        "#fff8dc",
+        "#ffec8b",
+        "#ffd700",
+        "#ffae00",
     ],
 }
 
 
 # ── Timing & Easing Functions ──────────────────────────────────────────────
 
+
 def linear(t: float) -> float:
     return t
+
 
 def ease_in(t: float) -> float:
     return t * t
 
+
 def ease_out(t: float) -> float:
     return 1 - (1 - t) * (1 - t)
 
+
 def ease_in_out(t: float) -> float:
     return t * t * (3 - 2 * t)
+
 
 def bounce_out(t: float) -> float:
     if t < 1 / 2.75:
@@ -82,6 +157,7 @@ def flicker(t: float, intensity: float = 0.3) -> float:
 
 # ── Color Utilities ────────────────────────────────────────────────────────
 
+
 def get_palette(scheme: ColorScheme) -> list[str]:
     """Get color palette for a scheme."""
     return PALETTES.get(scheme, PALETTES[ColorScheme.FIRE])
@@ -94,9 +170,10 @@ def random_scheme() -> ColorScheme:
 
 def lerp_color(c1: str, c2: str, t: float) -> str:
     """Linear interpolation between two hex colors."""
+
     def hex_to_rgb(h: str) -> tuple[int, int, int]:
         h = h.lstrip("#")
-        return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
 
     def rgb_to_hex(r: int, g: int, b: int) -> str:
         return f"#{r:02x}{g:02x}{b:02x}"
@@ -122,6 +199,7 @@ def cycle_palette(palette: list[str], offset: float) -> list[str]:
 
 # ── Text Manipulation ──────────────────────────────────────────────────────
 
+
 def split_lines(text: str) -> list[str]:
     """Split text into lines, preserving empty lines."""
     return text.split("\n")
@@ -146,6 +224,7 @@ def pad_lines(lines: list[str], width: int) -> list[str]:
 
 
 # ── Effect Generators ─────────────────────────────────────────────────────
+
 
 def effect_typewriter(lines: list[str], palette: list[str], progress: float) -> Text:
     """Typewriter effect: characters appear progressively."""

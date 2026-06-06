@@ -204,9 +204,13 @@ def send_message(
     except httpx.HTTPStatusError as e:
         status_code = e.response.status_code
         if status_code == 401:
-            raise AuthenticationError("Authentication failed. Check your API key.", {"url": url}) from e
+            raise AuthenticationError(
+                "Authentication failed. Check your API key.", {"url": url}
+            ) from e
         elif status_code == 403:
-            raise AuthenticationError("Access forbidden. Check API key permissions.", {"url": url}) from e
+            raise AuthenticationError(
+                "Access forbidden. Check API key permissions.", {"url": url}
+            ) from e
         elif status_code == 429:
             raise RateLimitError("Rate limit exceeded. Try again later.", {"url": url}) from e
         elif status_code == 404:

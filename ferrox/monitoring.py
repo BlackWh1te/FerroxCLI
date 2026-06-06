@@ -4,9 +4,9 @@ import os
 from typing import Optional
 
 import sentry_sdk
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
 from ferrox import __version__
-from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
 
 def init_sentry(

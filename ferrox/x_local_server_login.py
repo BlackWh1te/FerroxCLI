@@ -201,6 +201,7 @@ function submitCookies() {
 # HTTP request handler
 # ---------------------------------------------------------------------------
 
+
 class _CookieHandler(BaseHTTPRequestHandler):
     """Handles GET / (serve HTML) and POST /save (receive cookies)."""
 
@@ -266,6 +267,7 @@ class _CookieHandler(BaseHTTPRequestHandler):
 # Server lifecycle
 # ---------------------------------------------------------------------------
 
+
 def _find_free_port(start: int = 8765, end: int = 8899) -> int:
     """Find an available TCP port in the given range."""
     for port in range(start, end + 1):
@@ -296,6 +298,7 @@ def _run_server(port: int, cookie_path: Path, shutdown_event: threading.Event) -
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 async def x_login_via_local_server(timeout_seconds: int = 300) -> str:
     """Start a local HTTP server, print a URL, and wait for cookie paste.

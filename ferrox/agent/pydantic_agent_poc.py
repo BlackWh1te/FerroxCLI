@@ -1,4 +1,3 @@
-
 from pydantic_ai import Agent, RunContext
 
 from ..permissions import PermissionAction, PermissionEngine

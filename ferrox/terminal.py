@@ -152,6 +152,7 @@ class TerminalState:
         self.input_buffer = Buffer()
         if model_name is None:
             from .config import get_default_config
+
             provider = get_default_config().get_active_provider()
             model_name = f"{provider.type}:{provider.default_model}" if provider else "unknown"
         self.model_name = model_name

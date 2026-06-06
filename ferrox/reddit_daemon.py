@@ -25,13 +25,13 @@ from .utils.content_generator import (
     fetch_news_topics,
     generate_reddit_post,
 )
-from .utils.post_queue import PostQueue, QueuedPost
 
 # Platform compatibility
 from .utils.platform_compat import (
     LockFileDaemon,
     managed_event_loop,
 )
+from .utils.post_queue import PostQueue, QueuedPost
 
 # Tools (imported dynamically to avoid circular deps)
 
@@ -42,6 +42,7 @@ LOCK_FILE = Path.home() / ".ferrox" / "reddit_daemon.lock"
 def check_ollama_status() -> bool:
     """Check if Ollama is reachable (lightweight TCP probe)."""
     import socket
+
     try:
         with socket.create_connection(("localhost", 11434), timeout=2):
             return True
@@ -209,7 +210,9 @@ class RedditBotDaemon:
 
             enqueued = await self.queue.enqueue(post)
             if enqueued:
-                print(f"[Reddit Bot] Enqueued post '{generated['title'][:60]}...' → r/{subreddit or '?'}")
+                print(
+                    f"[Reddit Bot] Enqueued post '{generated['title'][:60]}...' → r/{subreddit or '?'}"
+                )
                 return True
             else:
                 print("[Reddit Bot] Post skipped (duplicate)")
@@ -245,6 +248,7 @@ class RedditBotDaemon:
 
             # Live post via tool
             from pydantic_ai import RunContext
+
             from .agent.tools_reddit import post_submission_tool
 
             ctx = RunContext({})
@@ -329,6 +333,7 @@ class RedditBotDaemon:
 
         # Write PID
         import os
+
         self.lock.start(os.getpid())
 
         # Update state

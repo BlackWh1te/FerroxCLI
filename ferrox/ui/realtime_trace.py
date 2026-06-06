@@ -59,7 +59,7 @@ class AgentPanel(Vertical):
             "coder": "💻",
             "reviewer": "👁️",
             "planner": "📋",
-            "worker": "⚙️"
+            "worker": "⚙️",
         }
         return icons.get(self.agent_role, "🤖")
 
@@ -70,7 +70,7 @@ class AgentPanel(Vertical):
 
         log = self.query_one("#agent-log", Log)
         timestamp = event.timestamp.strftime("%H:%M:%S")
-        content = event.data.get('content', '')[:100]
+        content = event.data.get("content", "")[:100]
         log.write_line(f"[{timestamp}] 🧠 {content}")
 
         # Update status
@@ -84,8 +84,8 @@ class AgentPanel(Vertical):
 
         log = self.query_one("#agent-log", Log)
         timestamp = event.timestamp.strftime("%H:%M:%S")
-        tool_name = event.data.get('tool_name', 'unknown')
-        args = event.data.get('args', {})
+        tool_name = event.data.get("tool_name", "unknown")
+        args = event.data.get("args", {})
         args_str = str(args)[:50] if args else ""
         log.write_line(f"[{timestamp}] 🛠️ {tool_name}({args_str})")
 
@@ -100,9 +100,9 @@ class AgentPanel(Vertical):
 
         log = self.query_one("#agent-log", Log)
         timestamp = event.timestamp.strftime("%H:%M:%S")
-        success = event.data.get('success', True)
+        success = event.data.get("success", True)
         icon = "✅" if success else "❌"
-        content = event.data.get('content', '')[:100]
+        content = event.data.get("content", "")[:100]
         log.write_line(f"[{timestamp}] {icon} {content}")
 
         # Update status
@@ -116,7 +116,7 @@ class AgentPanel(Vertical):
 
         log = self.query_one("#agent-log", Log)
         timestamp = event.timestamp.strftime("%H:%M:%S")
-        error = event.data.get('error', 'Unknown error')
+        error = event.data.get("error", "Unknown error")
         log.write_line(f"[{timestamp}] ❌ ERROR: {error}")
 
         # Update status
@@ -246,15 +246,12 @@ class RealTimeTraceViewer(App):
             "active_agents": 0,
             "total_events": 0,
             "tokens_used": 0,
-            "avg_response_time": 0.0
+            "avg_response_time": 0.0,
         }
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Horizontal(
-            Container(id="agents-container"),
-            MetricsPanel(id="metrics-panel")
-        )
+        yield Horizontal(Container(id="agents-container"), MetricsPanel(id="metrics-panel"))
         yield Footer()
 
     def on_mount(self) -> None:

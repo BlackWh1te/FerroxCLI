@@ -13,6 +13,7 @@ from .agent.event_bus import AgentEvent, EventType, event_bus
 @dataclass
 class AgentMetrics:
     """Metrics for a single agent."""
+
     agent_id: str
     agent_role: str
     tasks_completed: int = 0
@@ -36,6 +37,7 @@ class AgentMetrics:
 @dataclass
 class SystemMetrics:
     """System-level metrics."""
+
     cpu_percent: float = 0.0
     memory_percent: float = 0.0
     memory_used_mb: float = 0.0
@@ -87,14 +89,13 @@ class RealTimeMetrics:
 
         if agent_id not in self.agent_metrics:
             self.agent_metrics[agent_id] = AgentMetrics(
-                agent_id=agent_id,
-                agent_role=event.agent_role
+                agent_id=agent_id, agent_role=event.agent_role
             )
 
         metrics = self.agent_metrics[agent_id]
 
         # Update metrics based on result
-        success = event.data.get('success', True)
+        success = event.data.get("success", True)
         if success:
             metrics.tasks_completed += 1
         else:
@@ -104,38 +105,39 @@ class RealTimeMetrics:
         metrics.last_activity = datetime.now()
 
         # Update token usage if available
-        tokens = event.data.get('tokens_used', 0)
+        tokens = event.data.get("tokens_used", 0)
         if tokens:
             metrics.total_tokens_used += tokens
 
         # Publish metric event
-        await event_bus.publish(AgentEvent(
-            event_type=EventType.METRIC,
-            agent_id=agent_id,
-            agent_role=event.agent_role,
-            timestamp=datetime.now(),
-            data={
-                "name": "tasks_completed",
-                "value": metrics.tasks_completed,
-                "agent_id": agent_id
-            }
-        ))
+        await event_bus.publish(
+            AgentEvent(
+                event_type=EventType.METRIC,
+                agent_id=agent_id,
+                agent_role=event.agent_role,
+                timestamp=datetime.now(),
+                data={
+                    "name": "tasks_completed",
+                    "value": metrics.tasks_completed,
+                    "agent_id": agent_id,
+                },
+            )
+        )
 
     async def _on_status_change(self, event: AgentEvent):
         """Track status changes."""
         agent_id = event.agent_id
-        event.data.get('status')
+        event.data.get("status")
 
         if agent_id not in self.agent_metrics:
             self.agent_metrics[agent_id] = AgentMetrics(
-                agent_id=agent_id,
-                agent_role=event.agent_role
+                agent_id=agent_id, agent_role=event.agent_role
             )
 
         self.agent_metrics[agent_id].last_activity = datetime.now()
 
         # Track response time if available
-        response_time = event.data.get('response_time')
+        response_time = event.data.get("response_time")
         if response_time:
             self.agent_metrics[agent_id].update_response_time(response_time)
 
@@ -145,8 +147,7 @@ class RealTimeMetrics:
 
         if agent_id not in self.agent_metrics:
             self.agent_metrics[agent_id] = AgentMetrics(
-                agent_id=agent_id,
-                agent_role=event.agent_role
+                agent_id=agent_id, agent_role=event.agent_role
             )
 
         self.agent_metrics[agent_id].errors_count += 1
@@ -158,8 +159,7 @@ class RealTimeMetrics:
 
         if agent_id not in self.agent_metrics:
             self.agent_metrics[agent_id] = AgentMetrics(
-                agent_id=agent_id,
-                agent_role=event.agent_role
+                agent_id=agent_id, agent_role=event.agent_role
             )
 
         self.agent_metrics[agent_id].last_activity = datetime.now()
@@ -185,7 +185,7 @@ class RealTimeMetrics:
                 self.system_metrics.memory_total_mb = mem.total / (1024 * 1024)
 
                 # Disk metrics
-                disk = psutil.disk_usage('/')
+                disk = psutil.disk_usage("/")
                 self.system_metrics.disk_usage_percent = disk.percent
                 self.system_metrics.disk_used_gb = disk.used / (1024 * 1024 * 1024)
                 self.system_metrics.disk_total_gb = disk.total / (1024 * 1024 * 1024)
@@ -193,29 +193,37 @@ class RealTimeMetrics:
                 # Network metrics
                 net_io = psutil.net_io_counters()
                 if self._last_network_stats:
-                    self.system_metrics.network_sent_mb = (net_io.bytes_sent - self._last_network_stats.bytes_sent) / (1024 * 1024)
-                    self.system_metrics.network_recv_mb = (net_io.bytes_recv - self._last_network_stats.bytes_recv) / (1024 * 1024)
+                    self.system_metrics.network_sent_mb = (
+                        net_io.bytes_sent - self._last_network_stats.bytes_sent
+                    ) / (1024 * 1024)
+                    self.system_metrics.network_recv_mb = (
+                        net_io.bytes_recv - self._last_network_stats.bytes_recv
+                    ) / (1024 * 1024)
                 self._last_network_stats = net_io
 
                 # Process count
                 self.system_metrics.process_count = len(psutil.pids())
 
                 # Uptime
-                self.system_metrics.uptime_seconds = (datetime.now() - self.start_time).total_seconds()
+                self.system_metrics.uptime_seconds = (
+                    datetime.now() - self.start_time
+                ).total_seconds()
 
                 # Publish system metrics
-                await event_bus.publish(AgentEvent(
-                    event_type=EventType.METRIC,
-                    agent_id="system",
-                    agent_role="system",
-                    timestamp=datetime.now(),
-                    data={
-                        "cpu_percent": self.system_metrics.cpu_percent,
-                        "memory_percent": self.system_metrics.memory_percent,
-                        "disk_usage_percent": self.system_metrics.disk_usage_percent,
-                        "uptime_seconds": self.system_metrics.uptime_seconds
-                    }
-                ))
+                await event_bus.publish(
+                    AgentEvent(
+                        event_type=EventType.METRIC,
+                        agent_id="system",
+                        agent_role="system",
+                        timestamp=datetime.now(),
+                        data={
+                            "cpu_percent": self.system_metrics.cpu_percent,
+                            "memory_percent": self.system_metrics.memory_percent,
+                            "disk_usage_percent": self.system_metrics.disk_usage_percent,
+                            "uptime_seconds": self.system_metrics.uptime_seconds,
+                        },
+                    )
+                )
 
             except Exception as e:
                 print(f"Error collecting system metrics: {e}")
@@ -231,20 +239,24 @@ class RealTimeMetrics:
             avg_response_time = 0.0
 
             if self.agent_metrics:
-                avg_response_time = sum(m.avg_response_time for m in self.agent_metrics.values()) / len(self.agent_metrics)
+                avg_response_time = sum(
+                    m.avg_response_time for m in self.agent_metrics.values()
+                ) / len(self.agent_metrics)
 
-            await event_bus.publish(AgentEvent(
-                event_type=EventType.METRIC,
-                agent_id="aggregate",
-                agent_role="aggregate",
-                timestamp=datetime.now(),
-                data={
-                    "total_tasks_completed": total_tasks,
-                    "total_tokens_used": total_tokens,
-                    "avg_response_time": avg_response_time,
-                    "active_agents": len(self.agent_metrics)
-                }
-            ))
+            await event_bus.publish(
+                AgentEvent(
+                    event_type=EventType.METRIC,
+                    agent_id="aggregate",
+                    agent_role="aggregate",
+                    timestamp=datetime.now(),
+                    data={
+                        "total_tasks_completed": total_tasks,
+                        "total_tokens_used": total_tokens,
+                        "avg_response_time": avg_response_time,
+                        "active_agents": len(self.agent_metrics),
+                    },
+                )
+            )
 
             await asyncio.sleep(self.collection_interval)
 
@@ -270,18 +282,25 @@ class RealTimeMetrics:
         return {
             "agents": {
                 "total": len(self.agent_metrics),
-                "active": len([m for m in self.agent_metrics.values() if m.last_activity and (datetime.now() - m.last_activity).total_seconds() < 60]),
+                "active": len(
+                    [
+                        m
+                        for m in self.agent_metrics.values()
+                        if m.last_activity
+                        and (datetime.now() - m.last_activity).total_seconds() < 60
+                    ]
+                ),
                 "tasks_completed": total_tasks,
                 "tasks_failed": total_failed,
                 "tokens_used": total_tokens,
-                "errors": total_errors
+                "errors": total_errors,
             },
             "system": {
                 "cpu_percent": self.system_metrics.cpu_percent,
                 "memory_percent": self.system_metrics.memory_percent,
                 "disk_usage_percent": self.system_metrics.disk_usage_percent,
-                "uptime_seconds": self.system_metrics.uptime_seconds
-            }
+                "uptime_seconds": self.system_metrics.uptime_seconds,
+            },
         }
 
     async def stop(self):

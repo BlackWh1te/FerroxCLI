@@ -7,21 +7,21 @@ from enum import Enum
 
 
 class AnimationSpeed(Enum):
-    SLOW = 0.15      # ~7 fps, dramatic
-    NORMAL = 0.08    # ~12 fps, standard
-    FAST = 0.04      # ~25 fps, snappy
-    INSTANT = 0.0    # Skip animation
+    SLOW = 0.15  # ~7 fps, dramatic
+    NORMAL = 0.08  # ~12 fps, standard
+    FAST = 0.04  # ~25 fps, snappy
+    INSTANT = 0.0  # Skip animation
 
 
 class ColorScheme(Enum):
-    FIRE = "fire"           # Red -> Orange -> Yellow
-    CYBER = "cyber"         # Cyan -> Magenta -> Green
-    OCEAN = "ocean"         # Blue -> Cyan -> White
-    FOREST = "forest"       # Green -> Lime -> Yellow
-    SUNSET = "sunset"       # Purple -> Pink -> Orange
-    MONOCHROME = "mono"     # White -> Gray -> Black
-    RAINBOW = "rainbow"     # Full spectrum cycle
-    GOLD = "gold"           # Yellow -> Orange -> Red
+    FIRE = "fire"  # Red -> Orange -> Yellow
+    CYBER = "cyber"  # Cyan -> Magenta -> Green
+    OCEAN = "ocean"  # Blue -> Cyan -> White
+    FOREST = "forest"  # Green -> Lime -> Yellow
+    SUNSET = "sunset"  # Purple -> Pink -> Orange
+    MONOCHROME = "mono"  # White -> Gray -> Black
+    RAINBOW = "rainbow"  # Full spectrum cycle
+    GOLD = "gold"  # Yellow -> Orange -> Red
 
 
 @dataclass

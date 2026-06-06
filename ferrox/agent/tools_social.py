@@ -15,6 +15,7 @@ from pydantic_ai import RunContext
 # Import tracer
 try:
     from opentelemetry import trace
+
     tracer = trace.get_tracer(__name__)
 except Exception:
     tracer = None
@@ -75,7 +76,7 @@ class TokenBucket:
 # Global rate limiters
 _tweet_bucket = TokenBucket(rate=0.05, burst=2)  # 1 tweet per 20 seconds max
 _search_bucket = TokenBucket(rate=0.5, burst=5)  # 1 search per 2 seconds max
-_read_bucket = TokenBucket(rate=1.0, burst=10)   # Read operations
+_read_bucket = TokenBucket(rate=1.0, burst=10)  # Read operations
 
 
 def _get_twikit_client(config: SocialConfig):
@@ -90,8 +91,7 @@ def _get_twikit_client(config: SocialConfig):
         from twikit import Client
     except ImportError:
         raise ToolExecutionError(
-            "twikit not installed. Run: pip install twikit",
-            {"action": "get_client"}
+            "twikit not installed. Run: pip install twikit", {"action": "get_client"}
         ) from None
 
     client = Client()
@@ -119,9 +119,7 @@ def _get_twikit_client(config: SocialConfig):
             if isinstance(data, dict):
                 cookie_dict = data
             elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-                cookie_dict = {
-                    c["name"]: c["value"] for c in data if "name" in c and "value" in c
-                }
+                cookie_dict = {c["name"]: c["value"] for c in data if "name" in c and "value" in c}
             else:
                 cookie_dict = None
 
@@ -151,6 +149,7 @@ def validate_x_session() -> Optional[dict[str, Any]]:
 
     try:
         import json
+
         with open(cookie_path, encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
@@ -174,6 +173,7 @@ def validate_x_session() -> Optional[dict[str, Any]]:
     # Try to load with twikit (best-effort, may fail due to X API changes)
     try:
         from twikit import Client
+
         client = Client()
         client.set_cookies(cookie_dict)
     except Exception:  # nosec: B110 — intentional suppression
@@ -271,10 +271,10 @@ async def check_account_health_tool(ctx: RunContext) -> str:
             output = f"""Account Health Check Results:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Account Type: {account_type.upper()}
-Username: @{getattr(user, 'screen_name', 'unknown')}
+Username: @{getattr(user, "screen_name", "unknown")}
 Followers: {followers_count:,}
 Total Tweets: {statuses_count:,}
-Account Age: {account_age_days if created_at else 'unknown'} days
+Account Age: {account_age_days if created_at else "unknown"} days
 
 Today's Usage:
   Posts: {state.posts_today}/{limits.max_posts_per_day}
@@ -284,7 +284,7 @@ Today's Usage:
 Limits Applied:
   Max posts/day: {limits.max_posts_per_day}
   Max posts/hour: {limits.max_posts_per_hour}
-  Draft mode: {'ENABLED (approval required)' if config.content.draft_mode else 'DISABLED (auto-post)'}
+  Draft mode: {"ENABLED (approval required)" if config.content.draft_mode else "DISABLED (auto-post)"}
 
 Recommendations:
 """
@@ -328,10 +328,7 @@ Recommendations:
 
 
 async def search_tweets_tool(
-    ctx: RunContext,
-    query: str,
-    max_results: int = 10,
-    search_type: str = "Latest"
+    ctx: RunContext, query: str, max_results: int = 10, search_type: str = "Latest"
 ) -> str:
     """Search for tweets on X.
 
@@ -369,7 +366,9 @@ async def search_tweets_tool(
 
         for i, tweet in enumerate(tweets, 1):
             output += f"{i}. @{tweet.user.name}\n"
-            output += f"   {tweet.text[:200]}...\n" if len(tweet.text) > 200 else f"   {tweet.text}\n"
+            output += (
+                f"   {tweet.text[:200]}...\n" if len(tweet.text) > 200 else f"   {tweet.text}\n"
+            )
             output += f"   Likes: {tweet.favorite_count} | RTs: {tweet.retweet_count}\n"
             output += f"   ID: {tweet.id}\n\n"
 
@@ -482,12 +481,16 @@ async def post_tweet_tool(
 
         # Update state
         state.posts_today += 1
-        state.recent_tweets.append({
-            "id": tweet.id,
-            "text": sanitized[:100],
-            "hash": hashlib.md5(sanitized.lower().encode(), usedforsecurity=False).hexdigest()[:16],
-            "posted_at": datetime.now().isoformat(),
-        })
+        state.recent_tweets.append(
+            {
+                "id": tweet.id,
+                "text": sanitized[:100],
+                "hash": hashlib.md5(sanitized.lower().encode(), usedforsecurity=False).hexdigest()[
+                    :16
+                ],
+                "posted_at": datetime.now().isoformat(),
+            }
+        )
         state.consecutive_failures = 0
         save_social_state(state)
 
@@ -610,7 +613,9 @@ async def get_recent_posts_tool(ctx: RunContext, count: int = 20) -> str:
         output += "=" * 60 + "\n\n"
 
         for i, tweet in enumerate(tweets, 1):
-            output += f"{i}. {tweet.text[:150]}...\n" if len(tweet.text) > 150 else f"{i}. {tweet.text}\n"
+            output += (
+                f"{i}. {tweet.text[:150]}...\n" if len(tweet.text) > 150 else f"{i}. {tweet.text}\n"
+            )
             output += f"   Likes: {tweet.favorite_count} | ID: {tweet.id}\n\n"
 
         _log_tool_result("get_recent_posts", f"Retrieved {len(tweets)} tweets", True)

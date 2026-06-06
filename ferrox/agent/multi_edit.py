@@ -25,6 +25,7 @@ except ImportError:
 @dataclass
 class FileEdit:
     """A single file edit operation."""
+
     path: str
     original_content: str
     new_content: str
@@ -35,6 +36,7 @@ class FileEdit:
 @dataclass
 class EditTransaction:
     """A transaction of multiple file edits."""
+
     id: str
     edits: list[FileEdit] = field(default_factory=list)
     status: str = "pending"  # pending, applied, rolled_back
@@ -52,7 +54,9 @@ class MultiFileEditor:
         self.backup_dir = Path.home() / ".ferrox" / "backups"
         self.backup_dir.mkdir(parents=True, exist_ok=True)
 
-    def begin_transaction(self, transaction_id: str, metadata: Optional[dict[str, Any]] = None) -> str:
+    def begin_transaction(
+        self, transaction_id: str, metadata: Optional[dict[str, Any]] = None
+    ) -> str:
         """Begin a new transaction.
 
         Args:
@@ -68,10 +72,7 @@ class MultiFileEditor:
             if self.current_transaction:
                 raise Exception("Transaction already in progress. Commit or rollback first.")
 
-            self.current_transaction = EditTransaction(
-                id=transaction_id,
-                metadata=metadata or {}
-            )
+            self.current_transaction = EditTransaction(id=transaction_id, metadata=metadata or {})
 
             return transaction_id
 
@@ -93,14 +94,14 @@ class MultiFileEditor:
             # Read original content if file exists
             original_content = ""
             if Path(path).exists():
-                with open(path, encoding='utf-8') as f:
+                with open(path, encoding="utf-8") as f:
                     original_content = f.read()
 
             edit = FileEdit(
                 path=path,
                 original_content=original_content,
                 new_content=new_content,
-                operation=operation
+                operation=operation,
             )
 
             self.current_transaction.edits.append(edit)
@@ -120,18 +121,20 @@ class MultiFileEditor:
             preview = {
                 "transaction_id": self.current_transaction.id,
                 "total_edits": len(self.current_transaction.edits),
-                "edits": []
+                "edits": [],
             }
 
             for edit in self.current_transaction.edits:
                 diff = self._generate_diff(edit.original_content, edit.new_content, edit.path)
-                preview["edits"].append({
-                    "path": edit.path,
-                    "operation": edit.operation,
-                    "diff": diff,
-                    "lines_added": diff.count("\n+") if diff else 0,
-                    "lines_removed": diff.count("\n-") if diff else 0
-                })
+                preview["edits"].append(
+                    {
+                        "path": edit.path,
+                        "operation": edit.operation,
+                        "diff": diff,
+                        "lines_added": diff.count("\n+") if diff else 0,
+                        "lines_removed": diff.count("\n-") if diff else 0,
+                    }
+                )
 
             return preview
 
@@ -141,11 +144,7 @@ class MultiFileEditor:
         new_lines = new.splitlines(keepends=True)
 
         diff = difflib.unified_diff(
-            original_lines,
-            new_lines,
-            fromfile=f"a/{filepath}",
-            tofile=f"b/{filepath}",
-            lineterm=""
+            original_lines, new_lines, fromfile=f"a/{filepath}", tofile=f"b/{filepath}", lineterm=""
         )
 
         return "".join(diff)
@@ -171,7 +170,7 @@ class MultiFileEditor:
                 "status": "success",
                 "applied_edits": 0,
                 "failed_edits": 0,
-                "errors": []
+                "errors": [],
             }
 
             # Create backup if requested
@@ -187,10 +186,7 @@ class MultiFileEditor:
                         result["applied_edits"] += 1
                     except Exception as e:
                         result["failed_edits"] += 1
-                        result["errors"].append({
-                            "path": edit.path,
-                            "error": str(e)
-                        })
+                        result["errors"].append({"path": edit.path, "error": str(e)})
 
                         # Rollback on first error
                         if backup_path:
@@ -232,7 +228,7 @@ class MultiFileEditor:
             if path.exists():
                 path.unlink()
         else:
-            with open(path, 'w', encoding='utf-8') as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(edit.new_content)
 
     def rollback_transaction(self) -> dict[str, Any]:
@@ -250,7 +246,7 @@ class MultiFileEditor:
             result = {
                 "transaction_id": self.current_transaction.id,
                 "status": "rolled_back",
-                "restored_files": 0
+                "restored_files": 0,
             }
 
             # Restore original content for each edit
@@ -261,14 +257,11 @@ class MultiFileEditor:
                         # File was deleted, don't recreate
                         pass
                     else:
-                        with open(path, 'w', encoding='utf-8') as f:
+                        with open(path, "w", encoding="utf-8") as f:
                             f.write(edit.original_content)
                     result["restored_files"] += 1
                 except Exception as e:
-                    result.setdefault("errors", []).append({
-                        "path": edit.path,
-                        "error": str(e)
-                    })
+                    result.setdefault("errors", []).append({"path": edit.path, "error": str(e)})
 
             self.current_transaction.status = "rolled_back"
             self.transaction_history.append(self.current_transaction)
@@ -282,6 +275,7 @@ class MultiFileEditor:
         backup_path = self.backup_dir / f"backup_{backup_timestamp}.tar.gz"
 
         import tarfile
+
         with tarfile.open(backup_path, "w:gz") as tar:
             for edit in self.current_transaction.edits:
                 path = Path(edit.path)
@@ -293,6 +287,7 @@ class MultiFileEditor:
     def _restore_backup(self, backup_path: Path) -> None:
         """Restore files from backup."""
         import tarfile
+
         with tarfile.open(backup_path, "r:gz") as tar:
             safe_members = []
             for member in tar.getmembers():
@@ -301,10 +296,14 @@ class MultiFileEditor:
                     member_path.resolve().relative_to(self.backup_dir.resolve())
                     safe_members.append(member)
                 except ValueError:
-                    raise ValueError(f"Invalid tar entry: {member.name} attempts path traversal") from None
+                    raise ValueError(
+                        f"Invalid tar entry: {member.name} attempts path traversal"
+                    ) from None
             tar.extractall(self.backup_dir, members=safe_members)  # nosec: B202
 
-    def extract_function(self, source_file: str, function_name: str, target_file: str) -> dict[str, Any]:
+    def extract_function(
+        self, source_file: str, function_name: str, target_file: str
+    ) -> dict[str, Any]:
         """Extract a function to a new file and update imports.
 
         Args:
@@ -325,7 +324,7 @@ class MultiFileEditor:
                 "source_file": source_file,
                 "function_name": function_name,
                 "target_file": target_file,
-                "status": "pending"
+                "status": "pending",
             }
 
             try:
@@ -335,7 +334,8 @@ class MultiFileEditor:
 
                 # Find function (simple regex-based approach)
                 import re
-                function_pattern = rf'(def {function_name}\s*\([^)]*\)\s*->[^:]*:.*?)(?=\ndef |\Z)'
+
+                function_pattern = rf"(def {function_name}\s*\([^)]*\)\s*->[^:]*:.*?)(?=\ndef |\Z)"
                 match = re.search(function_pattern, source_content, re.DOTALL)
 
                 if not match:
@@ -368,7 +368,9 @@ class MultiFileEditor:
 
             return result
 
-    def rename_symbol(self, file_path: str, old_name: str, new_name: str, scope: str = "file") -> dict[str, Any]:
+    def rename_symbol(
+        self, file_path: str, old_name: str, new_name: str, scope: str = "file"
+    ) -> dict[str, Any]:
         """Rename a symbol (function, variable, class) across files.
 
         Args:
@@ -393,7 +395,7 @@ class MultiFileEditor:
                 "new_name": new_name,
                 "scope": scope,
                 "status": "pending",
-                "affected_files": []
+                "affected_files": [],
             }
 
             try:
@@ -404,8 +406,9 @@ class MultiFileEditor:
 
                     # Simple string replacement (in production, use AST)
                     import re
+
                     # Replace whole words only
-                    pattern = r'\b' + re.escape(old_name) + r'\b'
+                    pattern = r"\b" + re.escape(old_name) + r"\b"
                     new_content = re.sub(pattern, new_name, content)
 
                     if new_content == content:
@@ -430,7 +433,9 @@ class MultiFileEditor:
 
             return result
 
-    def move_file(self, old_path: str, new_path: str, update_imports: bool = True) -> dict[str, Any]:
+    def move_file(
+        self, old_path: str, new_path: str, update_imports: bool = True
+    ) -> dict[str, Any]:
         """Move a file to a new location and update imports.
 
         Args:
@@ -451,7 +456,7 @@ class MultiFileEditor:
                 "old_path": old_path,
                 "new_path": new_path,
                 "update_imports": update_imports,
-                "status": "pending"
+                "status": "pending",
             }
 
             try:
@@ -501,7 +506,7 @@ class MultiFileEditor:
                 "status": t.status,
                 "total_edits": len(t.edits),
                 "created_at": t.created_at,
-                "metadata": t.metadata
+                "metadata": t.metadata,
             }
             for t in reversed(history)
         ]

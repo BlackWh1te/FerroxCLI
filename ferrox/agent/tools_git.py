@@ -37,9 +37,7 @@ async def git_status_tool(ctx: RunContext, path: str = ".") -> str:
         span.set_attribute("path", path)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Git status is read-only, always allowed
             if format_tool_call:
@@ -50,7 +48,7 @@ async def git_status_tool(ctx: RunContext, path: str = ".") -> str:
                 cwd=path,
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             if result.returncode != 0:
@@ -75,7 +73,9 @@ async def git_status_tool(ctx: RunContext, path: str = ".") -> str:
 
             if _current_agent:
                 _current_agent._log_tool_call("git_status", {"path": path})
-                _current_agent._log_tool_result("git_status", f"Found {len(lines)} changed files", True)
+                _current_agent._log_tool_result(
+                    "git_status", f"Found {len(lines)} changed files", True
+                )
 
             return output
 
@@ -109,9 +109,7 @@ async def git_diff_tool(ctx: RunContext, path: str = ".", cached: bool = False) 
         span.set_attribute("cached", cached)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Git diff is read-only, always allowed
             if format_tool_call:
@@ -123,11 +121,7 @@ async def git_diff_tool(ctx: RunContext, path: str = ".", cached: bool = False) 
             cmd.append("--")
 
             result = subprocess.run(
-                cmd + [path],
-                cwd=".",
-                capture_output=True,
-                text=True,
-                timeout=30
+                cmd + [path], cwd=".", capture_output=True, text=True, timeout=30
             )
 
             if result.returncode != 0:
@@ -144,7 +138,9 @@ async def git_diff_tool(ctx: RunContext, path: str = ".", cached: bool = False) 
 
             if _current_agent:
                 _current_agent._log_tool_call("git_diff", {"path": path, "cached": cached})
-                _current_agent._log_tool_result("git_diff", f"Generated diff ({len(output)} chars)", True)
+                _current_agent._log_tool_result(
+                    "git_diff", f"Generated diff ({len(output)} chars)", True
+                )
 
             return output
 
@@ -164,7 +160,9 @@ async def git_diff_tool(ctx: RunContext, path: str = ".", cached: bool = False) 
             return error_msg
 
 
-async def git_commit_tool(ctx: RunContext, message: str, path: str = ".", amend: bool = False) -> str:
+async def git_commit_tool(
+    ctx: RunContext, message: str, path: str = ".", amend: bool = False
+) -> str:
     """Create a git commit with the given message. Requires permission."""
     with tracer.start_as_current_span("git_commit_tool") as span:
         span.set_attribute("message", message)
@@ -193,13 +191,7 @@ async def git_commit_tool(ctx: RunContext, message: str, path: str = ".", amend:
                 cmd.append("--amend")
             cmd.extend(["-m", message])
 
-            result = subprocess.run(
-                cmd,
-                cwd=path,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            result = subprocess.run(cmd, cwd=path, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
                 error_msg = f"Git commit failed: {result.stderr}"
@@ -238,19 +230,14 @@ async def git_branch_tool(ctx: RunContext, show_current: bool = True) -> str:
         span.set_attribute("show_current", show_current)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Git branch is read-only, always allowed
             if format_tool_call:
                 format_tool_call("git_branch", {"show_current": show_current})
 
             result = subprocess.run(
-                ["git", "branch", "-a"],
-                capture_output=True,
-                text=True,
-                timeout=10
+                ["git", "branch", "-a"], capture_output=True, text=True, timeout=10
             )
 
             if result.returncode != 0:
@@ -320,12 +307,7 @@ async def git_checkout_tool(ctx: RunContext, branch: str, create: bool = False) 
                 cmd.append("-b")
             cmd.append(branch)
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
                 error_msg = f"Git checkout failed: {result.stderr}"
@@ -365,9 +347,7 @@ async def git_log_tool(ctx: RunContext, max_count: int = 10, path: str = ".") ->
         span.set_attribute("path", path)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Git log is read-only, always allowed
             if format_tool_call:
@@ -378,7 +358,7 @@ async def git_log_tool(ctx: RunContext, max_count: int = 10, path: str = ".") ->
                 cwd=path,
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             if result.returncode != 0:
@@ -451,12 +431,7 @@ async def git_stash_tool(ctx: RunContext, action: str = "save", message: str = "
             else:
                 return f"Unknown stash action: {action}"
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
                 error_msg = f"Git stash {action} failed: {result.stderr}"
@@ -496,9 +471,7 @@ async def git_blame_tool(ctx: RunContext, path: str, line: Optional[int] = None)
         span.set_attribute("line", line)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Git blame is read-only, always allowed
             if format_tool_call:
@@ -509,12 +482,7 @@ async def git_blame_tool(ctx: RunContext, path: str, line: Optional[int] = None)
                 cmd.extend(["-L", f"{line},{line}"])
             cmd.append(path)
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
                 error_msg = f"Git blame failed: {result.stderr}"
@@ -527,7 +495,9 @@ async def git_blame_tool(ctx: RunContext, path: str, line: Optional[int] = None)
             output = result.stdout
             if _current_agent:
                 _current_agent._log_tool_call("git_blame", {"path": path})
-                _current_agent._log_tool_result("git_blame", f"Generated blame ({len(output)} chars)", True)
+                _current_agent._log_tool_result(
+                    "git_blame", f"Generated blame ({len(output)} chars)", True
+                )
 
             return output
 

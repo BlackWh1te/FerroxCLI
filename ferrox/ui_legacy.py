@@ -154,7 +154,11 @@ class FerroxUI:
         try:
             config = get_default_config()
             provider = config.get_active_provider()
-            model = f"{provider.type}:{provider.default_model}" if provider and provider.default_model else "no model"
+            model = (
+                f"{provider.type}:{provider.default_model}"
+                if provider and provider.default_model
+                else "no model"
+            )
         except Exception:
             model = "unknown"
         tokens_used = "2k"

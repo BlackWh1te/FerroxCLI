@@ -80,7 +80,9 @@ class AnimationController:
         scheme = random_scheme() if self.config.random_scheme else self.config.color_scheme
         return get_palette(scheme)
 
-    def _render_frame(self, progress: float, effect_fn: Callable, palette: Optional[list] = None) -> Text:
+    def _render_frame(
+        self, progress: float, effect_fn: Callable, palette: Optional[list] = None
+    ) -> Text:
         """Render a single animation frame."""
         lines = self._prepare_art()
         if palette is None:
@@ -131,6 +133,7 @@ class AnimationController:
         # Choose effect
         if effect_name:
             from .logo_effects import get_effect
+
             effect_fn = get_effect(effect_name) or effect_fade_in
         else:
             effect_fn = effect_reveal_lines

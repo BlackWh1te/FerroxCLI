@@ -186,7 +186,9 @@ class ProgressManager:
         spinner.start()
         return spinner
 
-    def create_progress_bar(self, task_id: str, description: str, total: int) -> ProgressBarProgress:
+    def create_progress_bar(
+        self, task_id: str, description: str, total: int
+    ) -> ProgressBarProgress:
         """Create a progress bar indicator."""
         bar = ProgressBarProgress(description, total)
         self.indicators[task_id] = bar
@@ -243,7 +245,13 @@ class ProgressManager:
         table.add_column("Elapsed", style="dim")
 
         for task_id, indicator in self.indicators.items():
-            status = "Complete" if indicator.is_complete else "Cancelled" if indicator.is_cancelled else "In Progress"
+            status = (
+                "Complete"
+                if indicator.is_complete
+                else "Cancelled"
+                if indicator.is_cancelled
+                else "In Progress"
+            )
             table.add_row(
                 task_id,
                 indicator.description[:30],
@@ -258,7 +266,9 @@ class ProgressManager:
 class ContextProgress:
     """Context manager for progress indicators."""
 
-    def __init__(self, manager: ProgressManager, task_id: str, description: str, total: Optional[int] = None):
+    def __init__(
+        self, manager: ProgressManager, task_id: str, description: str, total: Optional[int] = None
+    ):
         self.manager = manager
         self.task_id = task_id
         self.description = description
@@ -304,7 +314,9 @@ def show_progress() -> None:
     get_progress_manager().render_all()
 
 
-def progress_context(task_id: str, description: str, total: Optional[int] = None) -> ContextProgress:
+def progress_context(
+    task_id: str, description: str, total: Optional[int] = None
+) -> ContextProgress:
     """Create a context manager for progress tracking."""
     return ContextProgress(get_progress_manager(), task_id, description, total)
 
@@ -312,23 +324,29 @@ def progress_context(task_id: str, description: str, total: Optional[int] = None
 # Convenience decorators
 def with_progress(task_id: str, description: str, total: Optional[int] = None):
     """Decorator to add progress tracking to a function."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             with progress_context(task_id, description, total) as progress:
-                kwargs['_progress'] = progress
+                kwargs["_progress"] = progress
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 async def async_with_progress(task_id: str, description: str, total: Optional[int] = None):
     """Async decorator to add progress tracking to a function."""
+
     def decorator(func):
         async def wrapper(*args, **kwargs):
             with progress_context(task_id, description, total) as progress:
-                kwargs['_progress'] = progress
+                kwargs["_progress"] = progress
                 return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -360,17 +378,20 @@ class LiveProgressDisplay:
 
             # Stack panels vertically
             from rich.layout import Layout
+
             layout = Layout()
             layout.split(*[Layout(panel) for panel in panels])
             return layout
 
-        with Live(generate_layout(), refresh_per_second=1/self.refresh_rate, console=console) as live:
+        with Live(
+            generate_layout(), refresh_per_second=1 / self.refresh_rate, console=console
+        ) as live:
             while self.is_running and any(
-                not i.is_complete and not i.is_cancelled
-                for i in self.manager.indicators.values()
+                not i.is_complete and not i.is_cancelled for i in self.manager.indicators.values()
             ):
                 live.update(generate_layout())
                 import time
+
                 time.sleep(self.refresh_rate)
 
     def stop(self) -> None:

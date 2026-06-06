@@ -92,7 +92,9 @@ def sanitize_content(text: str) -> tuple[str, list[str]]:
 
     for pattern in PROMPT_INJECTION_PATTERNS:
         if re.search(pattern, text_lower, re.IGNORECASE):
-            warnings.append(f"PROMPT INJECTION DETECTED: Pattern '{pattern}' found. Content discarded.")
+            warnings.append(
+                f"PROMPT INJECTION DETECTED: Pattern '{pattern}' found. Content discarded."
+            )
             return "[CONTENT BLOCKED: Prompt injection detected]", warnings
 
     # Remove common injection framing
@@ -153,12 +155,12 @@ def moderation_check(text: str) -> tuple[bool, list[str]]:
     # Check excessive emoji count
     emoji_pattern = re.compile(
         "["
-        "\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F1E0-\U0001F1FF"  # flags
-        "\U00002702-\U000027B0"
-        "\U000024C2-\U0001F251"
+        "\U0001f600-\U0001f64f"  # emoticons
+        "\U0001f300-\U0001f5ff"  # symbols & pictographs
+        "\U0001f680-\U0001f6ff"  # transport & map symbols
+        "\U0001f1e0-\U0001f1ff"  # flags
+        "\U00002702-\U000027b0"
+        "\U000024c2-\U0001f251"
         "]+",
         flags=re.UNICODE,
     )
@@ -226,7 +228,9 @@ def is_safe_domain(url: str) -> bool:
     return True
 
 
-def check_duplicate_content(new_text: str, previous_texts: list[str], threshold: float = 0.7) -> tuple[bool, float, str]:
+def check_duplicate_content(
+    new_text: str, previous_texts: list[str], threshold: float = 0.7
+) -> tuple[bool, float, str]:
     """Check if new text is too similar to previous posts.
 
     Args:

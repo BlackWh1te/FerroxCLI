@@ -8,6 +8,7 @@ import sys
 if os.name == "nt":
     try:
         import ctypes
+
         ctypes.windll.kernel32.SetConsoleOutputCP(65001)  # UTF-8
         ctypes.windll.kernel32.SetConsoleCP(65001)
     except Exception:  # nosec: B110 — intentional suppression
@@ -545,7 +546,6 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 open_config_editor()
                 continue
             elif command == "/model":
-
                 list_models(config)
                 continue
             elif command == "/plan":
@@ -827,14 +827,17 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 console.print(f"Daemon Running: {'Yes' if status['running'] else 'No'}")
                 console.print(f"Session Valid: {'Yes' if status['session_valid'] else 'No'}")
                 console.print(
-                    f"Browser Session: {'Saved (use /x-login to refresh)' if browser_session else 'None (run /x-login)'}")
+                    f"Browser Session: {'Saved (use /x-login to refresh)' if browser_session else 'None (run /x-login)'}"
+                )
                 console.print(f"Posts Today: {status['posts_today']}")
                 console.print(f"Consecutive Failures: {status['consecutive_failures']}")
                 if status["started_at"]:
                     console.print(f"Started: {status['started_at']}")
                 console.print("───────────────────────────────────────────────")
                 console.print("\n[dim]Commands:[/dim]")
-                console.print("  /x-login         - Browser login (recommended - no password stored)")
+                console.print(
+                    "  /x-login         - Browser login (recommended - no password stored)"
+                )
                 console.print("  /social login    - Manual username/password login")
                 console.print("  /social start    - Start background daemon")
                 console.print("  /social stop     - Stop daemon")
@@ -865,9 +868,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                     config.social = social_cfg
                 save_config(config)
 
-                console.print(
-                    "[green]✅ Credentials saved. Run /social start to begin.[/green]"
-                )
+                console.print("[green]✅ Credentials saved. Run /social start to begin.[/green]")
                 continue
             elif command == "/x-login":
                 """Real-browser X login via local server — no automation, no password stored."""
@@ -879,7 +880,9 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                         "A saved X session already exists. Overwrite? [y/N]: "
                     )
                     if overwrite.lower().strip() not in ("y", "yes"):
-                        console.print("[dim]Kept existing session. Run /social start to use it.[/dim]")
+                        console.print(
+                            "[dim]Kept existing session. Run /social start to use it.[/dim]"
+                        )
                         continue
 
                 console.print("[cyan]🐦 X Login via Real Browser[/cyan]")
@@ -916,7 +919,9 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 if is_placeholder:
                     console.print("\n[bold cyan]🐦 X Session Cookies Valid[/bold cyan]")
                     console.print("───────────────────────────────────────────────")
-                    console.print("  [dim]Cookies loaded — twikit/X API compatibility may affect live data retrieval.[/dim]")
+                    console.print(
+                        "  [dim]Cookies loaded — twikit/X API compatibility may affect live data retrieval.[/dim]"
+                    )
                 else:
                     console.print("\n[bold cyan]🐦 X Account Connected[/bold cyan]")
                     console.print("───────────────────────────────────────────────")
@@ -1040,7 +1045,8 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 console.print(f"Daemon Running: {'Yes' if status['running'] else 'No'}")
                 console.print(f"Session Valid: {'Yes' if status['session_valid'] else 'No'}")
                 console.print(
-                    f"Browser Session: {'Saved (use /reddit login-browser to refresh)' if browser_session else 'None (run /reddit login or /reddit login-browser)'}")
+                    f"Browser Session: {'Saved (use /reddit login-browser to refresh)' if browser_session else 'None (run /reddit login or /reddit login-browser)'}"
+                )
                 console.print(f"Posts Today: {status['posts_today']}")
                 console.print(f"Comments Today: {status['comments_today']}")
                 console.print(f"Consecutive Failures: {status['consecutive_failures']}")
@@ -1081,9 +1087,7 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                     config.reddit = reddit_cfg
                 save_config(config)
 
-                console.print(
-                    "[green]Credentials saved. Run /reddit start to begin.[/green]"
-                )
+                console.print("[green]Credentials saved. Run /reddit start to begin.[/green]")
                 continue
             elif command == "/reddit login-browser":
                 """Real-browser Reddit login via local server — no automation, no password stored."""
@@ -1095,7 +1099,9 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                         "A saved Reddit session already exists. Overwrite? [y/N]: "
                     )
                     if overwrite.lower().strip() not in ("y", "yes"):
-                        console.print("[dim]Kept existing session. Run /reddit start to use it.[/dim]")
+                        console.print(
+                            "[dim]Kept existing session. Run /reddit start to use it.[/dim]"
+                        )
                         continue
 
                 console.print("[cyan]Reddit Login via Real Browser[/cyan]")

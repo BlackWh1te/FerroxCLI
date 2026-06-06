@@ -16,7 +16,6 @@ from typing import Optional
 
 from ferrox.utils.content_safety import moderation_check, sanitize_content
 
-
 # Lazily imported to avoid dragging heavy deps at import time
 _feedparser: Optional[type] = None
 

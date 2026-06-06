@@ -12,6 +12,7 @@ from .orchestrator import FerroxAgent
 @dataclass
 class AgentTask:
     """Represents a task to be executed by an agent."""
+
     task_id: str
     description: str
     agent_role: str
@@ -68,22 +69,21 @@ class AgentPool:
             self.agents[agent_id] = agent
 
             # Publish agent spawned event
-            await event_bus.publish(AgentEvent(
-                event_type=EventType.AGENT_SPAWNED,
-                agent_id=agent_id,
-                agent_role="worker",
-                timestamp=datetime.now(),
-                data={"agent_id": agent_id}
-            ))
+            await event_bus.publish(
+                AgentEvent(
+                    event_type=EventType.AGENT_SPAWNED,
+                    agent_id=agent_id,
+                    agent_role="worker",
+                    timestamp=datetime.now(),
+                    data={"agent_id": agent_id},
+                )
+            )
 
         # Start task processor
         asyncio.create_task(self._process_tasks())
 
     async def submit_task(
-        self,
-        description: str,
-        agent_role: str = "worker",
-        priority: int = 0
+        self, description: str, agent_role: str = "worker", priority: int = 0
     ) -> str:
         """
         Submit a task to the pool.
@@ -100,23 +100,22 @@ class AgentPool:
         task_id = f"{agent_role}-{self._task_counter}"
 
         task = AgentTask(
-            task_id=task_id,
-            description=description,
-            agent_role=agent_role,
-            priority=priority
+            task_id=task_id, description=description, agent_role=agent_role, priority=priority
         )
 
         # Add to priority queue (negative priority for max-heap behavior)
         await self.task_queue.put((-priority, self._task_counter, task))
 
         # Publish task submission event
-        await event_bus.publish(AgentEvent(
-            event_type=EventType.STATUS_CHANGE,
-            agent_id="pool",
-            agent_role="pool",
-            timestamp=datetime.now(),
-            data={"task_id": task_id, "status": "queued"}
-        ))
+        await event_bus.publish(
+            AgentEvent(
+                event_type=EventType.STATUS_CHANGE,
+                agent_id="pool",
+                agent_role="pool",
+                timestamp=datetime.now(),
+                data={"task_id": task_id, "status": "queued"},
+            )
+        )
 
         return task_id
 
@@ -127,8 +126,7 @@ class AgentPool:
                 # Get next task (with timeout to allow checking running status)
                 try:
                     priority, counter, task = await asyncio.wait_for(
-                        self.task_queue.get(),
-                        timeout=1.0
+                        self.task_queue.get(), timeout=1.0
                     )
                 except asyncio.TimeoutError:
                     continue
@@ -148,13 +146,15 @@ class AgentPool:
                 self.active_tasks[task.task_id] = task
 
                 # Publish task assignment event
-                await event_bus.publish(AgentEvent(
-                    event_type=EventType.STATUS_CHANGE,
-                    agent_id=available_agent.agent_id,
-                    agent_role=available_agent.agent_role,
-                    timestamp=datetime.now(),
-                    data={"task_id": task.task_id, "status": "started"}
-                ))
+                await event_bus.publish(
+                    AgentEvent(
+                        event_type=EventType.STATUS_CHANGE,
+                        agent_id=available_agent.agent_id,
+                        agent_role=available_agent.agent_role,
+                        timestamp=datetime.now(),
+                        data={"task_id": task.task_id, "status": "started"},
+                    )
+                )
 
                 # Execute task
                 asyncio.create_task(self._execute_task(task, available_agent))
@@ -195,30 +195,34 @@ class AgentPool:
             task.result = "Task completed successfully"
 
             # Publish completion event with response time
-            await event_bus.publish(AgentEvent(
-                event_type=EventType.STATUS_CHANGE,
-                agent_id=agent.agent_id,
-                agent_role=agent.agent_role,
-                timestamp=datetime.now(),
-                data={
-                    "task_id": task.task_id,
-                    "status": "completed",
-                    "response_time": response_time
-                }
-            ))
+            await event_bus.publish(
+                AgentEvent(
+                    event_type=EventType.STATUS_CHANGE,
+                    agent_id=agent.agent_id,
+                    agent_role=agent.agent_role,
+                    timestamp=datetime.now(),
+                    data={
+                        "task_id": task.task_id,
+                        "status": "completed",
+                        "response_time": response_time,
+                    },
+                )
+            )
 
         except Exception as e:
             task.status = "failed"
             task.completed_at = datetime.now()
             task.error = str(e)
 
-            await event_bus.publish(AgentEvent(
-                event_type=EventType.ERROR,
-                agent_id=agent.agent_id,
-                agent_role=agent.agent_role,
-                timestamp=datetime.now(),
-                data={"task_id": task.task_id, "error": str(e)}
-            ))
+            await event_bus.publish(
+                AgentEvent(
+                    event_type=EventType.ERROR,
+                    agent_id=agent.agent_id,
+                    agent_role=agent.agent_role,
+                    timestamp=datetime.now(),
+                    data={"task_id": task.task_id, "error": str(e)},
+                )
+            )
 
         finally:
             # Move to completed tasks
@@ -258,7 +262,8 @@ class AgentPool:
     def get_pool_status(self) -> dict:
         """Get overall pool status."""
         available_agents = sum(
-            1 for agent_id in self.agents
+            1
+            for agent_id in self.agents
             if not any(
                 task.assigned_to == agent_id and task.status == "running"
                 for task in self.active_tasks.values()
@@ -271,7 +276,7 @@ class AgentPool:
             "active_tasks": len(self.active_tasks),
             "queued_tasks": self.task_queue.qsize(),
             "completed_tasks": len(self.completed_tasks),
-            "max_concurrent": self.max_concurrent
+            "max_concurrent": self.max_concurrent,
         }
 
     async def stop(self):
@@ -280,13 +285,15 @@ class AgentPool:
 
         # Terminate all agents
         for agent_id, agent in self.agents.items():
-            await event_bus.publish(AgentEvent(
-                event_type=EventType.AGENT_TERMINATED,
-                agent_id=agent_id,
-                agent_role=agent.agent_role,
-                timestamp=datetime.now(),
-                data={"agent_id": agent_id}
-            ))
+            await event_bus.publish(
+                AgentEvent(
+                    event_type=EventType.AGENT_TERMINATED,
+                    agent_id=agent_id,
+                    agent_role=agent.agent_role,
+                    timestamp=datetime.now(),
+                    data={"agent_id": agent_id},
+                )
+            )
 
 
 # Global agent pool instance

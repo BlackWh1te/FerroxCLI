@@ -267,6 +267,7 @@ async def run_browser_login(config: BrowserLoginConfig) -> str:  # noqa: C901
     stealth_available = False
     try:
         from playwright_stealth import stealth_async  # type: ignore[import-untyped]
+
         stealth_available = True
     except Exception:  # nosec: B110 — intentional suppression
         pass
@@ -317,9 +318,7 @@ async def run_browser_login(config: BrowserLoginConfig) -> str:  # noqa: C901
             print(f"\n  Timeout: {config.timeout_seconds} seconds")
             print("=" * 60 + "\n")
 
-            await page.wait_for_url(
-                config.is_logged_in, timeout=config.timeout_seconds * 1000
-            )
+            await page.wait_for_url(config.is_logged_in, timeout=config.timeout_seconds * 1000)
 
             print("  Login detected! Capturing session cookies...\n")
 
@@ -344,17 +343,12 @@ async def run_browser_login(config: BrowserLoginConfig) -> str:  # noqa: C901
 
             found = {c["name"] for c in cookies if c["name"] in config.key_cookie_names}
             print(f"  Captured {len(cookies)} cookies")
-            print(
-                f"  Key tokens: {', '.join(sorted(found)) or 'none recognised'}"
-            )
+            print(f"  Key tokens: {', '.join(sorted(found)) or 'none recognised'}")
             print(f"  Saved to: {config.cookie_path}")
             print(f"\n  You can now run '{config.start_cmd}' to use the Bot.")
             print("=" * 60 + "\n")
 
-            return (
-                f"Session saved ({len(cookies)} cookies). "
-                f"Run '{config.start_cmd}' to begin."
-            )
+            return f"Session saved ({len(cookies)} cookies). Run '{config.start_cmd}' to begin."
 
         except PWTimeout:
             return (

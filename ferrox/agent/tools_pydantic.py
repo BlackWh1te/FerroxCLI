@@ -320,7 +320,9 @@ async def run_background_tool(ctx: RunContext, command: str, cwd: str = ".") -> 
             if _current_agent:
                 _current_agent._log_tool_call("run_background", {"command": command})
                 _current_agent._log_tool_result("run_background", str(e), False)
-            raise ToolExecutionError(f"Error starting background job: {e}", {"command": command}) from e
+            raise ToolExecutionError(
+                f"Error starting background job: {e}", {"command": command}
+            ) from e
 
 
 async def list_jobs_tool(ctx: RunContext) -> str:
@@ -444,7 +446,9 @@ async def pip_install_tool(
             if _current_agent:
                 _current_agent._log_tool_call("pip_install", {"package": package})
                 _current_agent._log_tool_result("pip_install", str(e), False)
-            raise ToolExecutionError(f"Error installing pip package: {e}", {"package": package}) from e
+            raise ToolExecutionError(
+                f"Error installing pip package: {e}", {"package": package}
+            ) from e
 
 
 async def npm_install_tool(ctx: RunContext, package: str, flags: str = "-D") -> str:
@@ -480,7 +484,9 @@ async def npm_install_tool(ctx: RunContext, package: str, flags: str = "-D") -> 
             if _current_agent:
                 _current_agent._log_tool_call("npm_install", {"package": package})
                 _current_agent._log_tool_result("npm_install", str(e), False)
-            raise ToolExecutionError(f"Error installing npm package: {e}", {"package": package}) from e
+            raise ToolExecutionError(
+                f"Error installing npm package: {e}", {"package": package}
+            ) from e
 
 
 async def cargo_install_tool(ctx: RunContext, package: str, flags: str = "") -> str:
@@ -513,7 +519,9 @@ async def cargo_install_tool(ctx: RunContext, package: str, flags: str = "") -> 
             if _current_agent:
                 _current_agent._log_tool_call("cargo_install", {"package": package})
                 _current_agent._log_tool_result("cargo_install", str(e), False)
-            raise ToolExecutionError(f"Error installing cargo package: {e}", {"package": package}) from e
+            raise ToolExecutionError(
+                f"Error installing cargo package: {e}", {"package": package}
+            ) from e
 
 
 async def brew_install_tool(ctx: RunContext, package: str, flags: str = "") -> str:
@@ -546,7 +554,9 @@ async def brew_install_tool(ctx: RunContext, package: str, flags: str = "") -> s
             if _current_agent:
                 _current_agent._log_tool_call("brew_install", {"package": package})
                 _current_agent._log_tool_result("brew_install", str(e), False)
-            raise ToolExecutionError(f"Error installing brew package: {e}", {"package": package}) from e
+            raise ToolExecutionError(
+                f"Error installing brew package: {e}", {"package": package}
+            ) from e
 
 
 async def go_install_tool(ctx: RunContext, package: str) -> str:
@@ -578,7 +588,9 @@ async def go_install_tool(ctx: RunContext, package: str) -> str:
             if _current_agent:
                 _current_agent._log_tool_call("go_install", {"package": package})
                 _current_agent._log_tool_result("go_install", str(e), False)
-            raise ToolExecutionError(f"Error installing go package: {e}", {"package": package}) from e
+            raise ToolExecutionError(
+                f"Error installing go package: {e}", {"package": package}
+            ) from e
 
 
 async def fetch_url_tool(ctx: RunContext, url: str, max_chars: int = 8000) -> str:
@@ -680,13 +692,15 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
             "offers coverage",
             "check their website",
             "provides comprehensive",
-            "stay informed"
+            "stay informed",
         ]
 
         for phrase in generic_phrases:
             if phrase.lower() in response.lower():
                 issues.append(f"Contains generic phrase: '{phrase}'")
-                suggestions.append("Extract actual headlines/content instead of describing the site")
+                suggestions.append(
+                    "Extract actual headlines/content instead of describing the site"
+                )
 
         # Check for specific information
         has_dates = any(char.isdigit() for char in response)  # Simple check for numbers/dates
@@ -712,7 +726,7 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
 
         # Check if response is just a list of URLs
         url_count = response.count("http")
-        if url_count > 3 and len(response.split('\n')) < url_count + 5:
+        if url_count > 3 and len(response.split("\n")) < url_count + 5:
             issues.append("Response is mostly URLs without content")
             suggestions.append("Fetch and summarize actual content from URLs")
 
@@ -729,7 +743,9 @@ async def verify_response_quality(ctx: RunContext, response: str) -> str:
             for suggestion in suggestions:
                 output += f"  • {suggestion}\n"
 
-            output += "\nRecommendation: Use web_search(query, fetch_content=True) to get actual content."
+            output += (
+                "\nRecommendation: Use web_search(query, fetch_content=True) to get actual content."
+            )
 
             return output
 
@@ -754,6 +770,7 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
             # Try to extract structured content using readability if available
             try:
                 from readability import Document
+
                 doc = Document(content)
                 title = doc.title()
                 main_content = doc.summary()
@@ -764,21 +781,24 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
                 output += "=" * 60 + "\n\n"
 
                 # Extract summary (first paragraph)
-                paragraphs = main_content.split('\n')
+                paragraphs = main_content.split("\n")
                 if paragraphs:
                     output += f"Summary:\n{paragraphs[0][:500]}...\n\n"
 
                 # Extract key points (look for bullet points or numbered lists)
                 output += "Key Points:\n"
                 for para in paragraphs[1:10]:  # Check first 10 paragraphs
-                    if para.strip() and (para.strip().startswith('•') or
-                                         para.strip().startswith('-') or
-                                         para.strip().startswith('*') or
-                                         any(para.strip().startswith(str(i)+'.') for i in range(1, 10))):
+                    if para.strip() and (
+                        para.strip().startswith("•")
+                        or para.strip().startswith("-")
+                        or para.strip().startswith("*")
+                        or any(para.strip().startswith(str(i) + ".") for i in range(1, 10))
+                    ):
                         output += f"  {para.strip()}\n"
 
                 # Extract quotes (look for text in quotes)
                 import re
+
                 quotes = re.findall(r'"([^"]{20,200})"', main_content)
                 if quotes:
                     output += "\nNotable Quotes:\n"
@@ -794,7 +814,7 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
                 output += "=" * 60 + "\n\n"
 
                 # Extract first few paragraphs
-                paragraphs = content.split('\n\n')
+                paragraphs = content.split("\n\n")
                 output += "Content Preview:\n"
                 for para in paragraphs[:5]:
                     if len(para.strip()) > 50:  # Skip very short lines
@@ -811,7 +831,9 @@ async def extract_article_content(ctx: RunContext, url: str) -> str:
             return error_msg
 
 
-async def web_search_tool(ctx: RunContext, query: str, max_results: int = 5, fetch_content: bool = False) -> str:
+async def web_search_tool(
+    ctx: RunContext, query: str, max_results: int = 5, fetch_content: bool = False
+) -> str:
     """Search the web for a query and return structured result text. Use this for ANY question about current events, games, news, people, products, or facts you do not already know. Pass a concise query string.
 
     Args:
@@ -824,7 +846,10 @@ async def web_search_tool(ctx: RunContext, query: str, max_results: int = 5, fet
         span.set_attribute("max_results", max_results)
         span.set_attribute("fetch_content", fetch_content)
         if format_tool_call:
-            format_tool_call("web_search", {"query": query, "max_results": max_results, "fetch_content": fetch_content})
+            format_tool_call(
+                "web_search",
+                {"query": query, "max_results": max_results, "fetch_content": fetch_content},
+            )
         try:
             from ddgs import DDGS
 

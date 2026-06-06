@@ -43,7 +43,7 @@ async def api_test_tool(
     body: Optional[str] = None,
     auth: Optional[dict[str, str]] = None,
     expected_status: Optional[int] = None,
-    assertions: Optional[list[str]] = None
+    assertions: Optional[list[str]] = None,
 ) -> str:
     """Test an API endpoint with optional authentication and assertions.
 
@@ -67,7 +67,9 @@ async def api_test_tool(
             )
 
             # API calls are read-only by default (GET), write operations need permission
-            if method.upper() not in ["GET", "HEAD", "OPTIONS"] and not permissions.check_access(url, PermissionAction.WRITE, mode):
+            if method.upper() not in ["GET", "HEAD", "OPTIONS"] and not permissions.check_access(
+                url, PermissionAction.WRITE, mode
+            ):
                 error_msg = f"Permission denied: {method} requests require write access to {url}"
                 span.set_attribute("access", "denied")
                 if _current_agent:
@@ -119,7 +121,7 @@ async def api_test_tool(
                     url=url,
                     headers=request_headers,
                     content=request_body,
-                    **auth_kwargs
+                    **auth_kwargs,
                 )
 
             # Record in history
@@ -128,7 +130,7 @@ async def api_test_tool(
                 "method": method,
                 "status_code": response.status_code,
                 "headers": dict(response.headers),
-                "response_length": len(response.content)
+                "response_length": len(response.content),
             }
             _request_history.append(history_entry)
             if len(_request_history) > 100:  # Keep last 100 requests
@@ -143,7 +145,9 @@ async def api_test_tool(
 
             # Check expected status
             if expected_status and response.status_code != expected_status:
-                output += f"  ❌ FAILED: Expected status {expected_status}, got {response.status_code}\n"
+                output += (
+                    f"  ❌ FAILED: Expected status {expected_status}, got {response.status_code}\n"
+                )
             else:
                 output += "  ✓ Status code matches expectation\n"
 
@@ -194,7 +198,9 @@ async def api_test_tool(
             return error_msg
 
 
-async def api_mock_tool(ctx: RunContext, endpoint: str, response: str, method: str = "GET", status_code: int = 200) -> str:
+async def api_mock_tool(
+    ctx: RunContext, endpoint: str, response: str, method: str = "GET", status_code: int = 200
+) -> str:
     """Generate a mock API response definition for testing purposes.
 
     Args:
@@ -209,9 +215,7 @@ async def api_mock_tool(ctx: RunContext, endpoint: str, response: str, method: s
         span.set_attribute("status_code", status_code)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # Mock generation is read-only, always allowed
             if format_tool_call:
@@ -233,7 +237,7 @@ async def api_mock_tool(ctx: RunContext, endpoint: str, response: str, method: s
                 "endpoint": endpoint,
                 "method": method,
                 "status_code": status_code,
-                "response": json.loads(response)
+                "response": json.loads(response),
             }
 
             output = "Mock API Response Definition:\n\n"
@@ -265,9 +269,7 @@ async def openapi_parse_tool(ctx: RunContext, url_or_path: str) -> str:
         span.set_attribute("url_or_path", url_or_path)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # OpenAPI parsing is read-only, always allowed
             if format_tool_call:
@@ -278,6 +280,7 @@ async def openapi_parse_tool(ctx: RunContext, url_or_path: str) -> str:
                 # Fetch from URL
                 try:
                     import httpx
+
                     async with httpx.AsyncClient(timeout=30) as client:
                         response = await client.get(url_or_path)
                         response.raise_for_status()
@@ -370,9 +373,7 @@ async def api_history_tool(ctx: RunContext, limit: int = 10) -> str:
         span.set_attribute("limit", limit)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # History is read-only, always allowed
             if format_tool_call:
@@ -389,7 +390,9 @@ async def api_history_tool(ctx: RunContext, limit: int = 10) -> str:
 
             if _current_agent:
                 _current_agent._log_tool_call("api_history", {"limit": limit})
-                _current_agent._log_tool_result("api_history", f"Retrieved {min(limit, len(_request_history))} entries", True)
+                _current_agent._log_tool_result(
+                    "api_history", f"Retrieved {min(limit, len(_request_history))} entries", True
+                )
 
             return output
 
@@ -416,9 +419,7 @@ async def api_diff_tool(ctx: RunContext, url1: str, url2: str, method: str = "GE
         span.set_attribute("method", method)
 
         try:
-            (
-                ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL
-            )
+            (ctx.deps.mode if hasattr(ctx, "deps") and hasattr(ctx.deps, "mode") else Mode.NORMAL)
 
             # API diff is read-only, always allowed
             if format_tool_call:

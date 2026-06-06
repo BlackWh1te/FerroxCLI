@@ -20,6 +20,7 @@ tracer = trace.get_tracer(__name__)
 @dataclass
 class MemoryEntry:
     """A single conversation memory entry."""
+
     timestamp: str
     role: str  # "user" or "assistant"
     content: str
@@ -52,7 +53,7 @@ class ConversationMemory:
             "coding_style": {},
             "preferred_patterns": [],
             "frequent_commands": defaultdict(int),
-            "project_contexts": defaultdict(int)
+            "project_contexts": defaultdict(int),
         }
 
         # Load existing data
@@ -68,7 +69,8 @@ class ConversationMemory:
         if self._embedding_model is None:
             try:
                 from sentence_transformers import SentenceTransformer
-                self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+                self._embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
             except ImportError:
                 print("Warning: sentence-transformers not installed. Semantic search disabled.")
                 return None
@@ -98,7 +100,7 @@ class ConversationMemory:
                 role=role,
                 content=content,
                 embedding=self._get_embedding(content),
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
 
             self.entries.append(entry)
@@ -133,7 +135,9 @@ class ConversationMemory:
         if len(self.preferences["preferred_patterns"]) > 100:
             self.preferences["preferred_patterns"] = self.preferences["preferred_patterns"][-100:]
 
-    def semantic_search(self, query: str, top_k: int = 5, role_filter: Optional[str] = None) -> list[MemoryEntry]:
+    def semantic_search(
+        self, query: str, top_k: int = 5, role_filter: Optional[str] = None
+    ) -> list[MemoryEntry]:
         """Search conversation history semantically.
 
         Args:
@@ -165,15 +169,20 @@ class ConversationMemory:
             for entry in candidates:
                 if entry.embedding:
                     import numpy as np
-                    similarity = float(np.dot(query_embedding, entry.embedding) /
-                                    (np.linalg.norm(query_embedding) * np.linalg.norm(entry.embedding)))
+
+                    similarity = float(
+                        np.dot(query_embedding, entry.embedding)
+                        / (np.linalg.norm(query_embedding) * np.linalg.norm(entry.embedding))
+                    )
                     similarities.append((similarity, entry))
 
             # Sort by similarity and return top_k
             similarities.sort(key=lambda x: x[0], reverse=True)
             return [entry for _, entry in similarities[:top_k]]
 
-    def _keyword_search(self, query: str, top_k: int, role_filter: Optional[str] = None) -> list[MemoryEntry]:
+    def _keyword_search(
+        self, query: str, top_k: int, role_filter: Optional[str] = None
+    ) -> list[MemoryEntry]:
         """Fallback keyword search when embeddings are not available."""
         query_lower = query.lower()
         candidates = self.entries
@@ -190,7 +199,9 @@ class ConversationMemory:
         scored.sort(key=lambda x: x[0], reverse=True)
         return [entry for _, entry in scored[:top_k]]
 
-    def get_recent_context(self, max_entries: int = 10, max_tokens: int = 4000) -> list[dict[str, str]]:
+    def get_recent_context(
+        self, max_entries: int = 10, max_tokens: int = 4000
+    ) -> list[dict[str, str]]:
         """Get recent conversation context with token optimization.
 
         Args:
@@ -231,7 +242,13 @@ class ConversationMemory:
                     if summary_buffer:
                         summary = self._summarize_entries(summary_buffer)
                         if summary:
-                            result.insert(0, {"role": "system", "content": f"[Previous conversation summary]: {summary}"})
+                            result.insert(
+                                0,
+                                {
+                                    "role": "system",
+                                    "content": f"[Previous conversation summary]: {summary}",
+                                },
+                            )
                         summary_buffer = []
 
                     # Keep most recent entry even if it exceeds limit
@@ -267,7 +284,7 @@ class ConversationMemory:
             "coding_style": dict(self.preferences["coding_style"]),
             "preferred_patterns": self.preferences["preferred_patterns"],
             "frequent_commands": dict(self.preferences["frequent_commands"]),
-            "project_contexts": dict(self.preferences["project_contexts"])
+            "project_contexts": dict(self.preferences["project_contexts"]),
         }
 
     def clear_old_entries(self, days_to_keep: int = 30) -> int:
@@ -283,11 +300,11 @@ class ConversationMemory:
             span.set_attribute("days_to_keep", days_to_keep)
 
             from datetime import datetime, timedelta
+
             cutoff = datetime.now() - timedelta(days=days_to_keep)
 
             original_count = len(self.entries)
-            self.entries = [e for e in self.entries
-                          if datetime.fromisoformat(e.timestamp) > cutoff]
+            self.entries = [e for e in self.entries if datetime.fromisoformat(e.timestamp) > cutoff]
 
             removed = original_count - len(self.entries)
             if removed > 0:
@@ -308,7 +325,7 @@ class ConversationMemory:
     def _save_conversations(self) -> None:
         """Save conversations to disk."""
         try:
-            with open(self.conversations_file, 'w') as f:
+            with open(self.conversations_file, "w") as f:
                 json.dump([asdict(e) for e in self.entries], f, indent=2)
         except Exception as e:
             print(f"Error saving conversations: {e}")
@@ -321,8 +338,12 @@ class ConversationMemory:
                     data = json.load(f)
                     self.preferences.update(data)
                     # Convert back to defaultdict
-                    self.preferences["frequent_commands"] = defaultdict(int, data.get("frequent_commands", {}))
-                    self.preferences["project_contexts"] = defaultdict(int, data.get("project_contexts", {}))
+                    self.preferences["frequent_commands"] = defaultdict(
+                        int, data.get("frequent_commands", {})
+                    )
+                    self.preferences["project_contexts"] = defaultdict(
+                        int, data.get("project_contexts", {})
+                    )
             except Exception as e:
                 print(f"Error loading preferences: {e}")
 
@@ -334,9 +355,9 @@ class ConversationMemory:
                 "coding_style": self.preferences["coding_style"],
                 "preferred_patterns": self.preferences["preferred_patterns"],
                 "frequent_commands": dict(self.preferences["frequent_commands"]),
-                "project_contexts": dict(self.preferences["project_contexts"])
+                "project_contexts": dict(self.preferences["project_contexts"]),
             }
-            with open(self.preferences_file, 'w') as f:
+            with open(self.preferences_file, "w") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
             print(f"Error saving preferences: {e}")
@@ -350,5 +371,5 @@ class ConversationMemory:
             "with_embeddings": sum(1 for e in self.entries if e.embedding),
             "oldest_entry": self.entries[0].timestamp if self.entries else None,
             "newest_entry": self.entries[-1].timestamp if self.entries else None,
-            "preferences": self.get_preferences()
+            "preferences": self.get_preferences(),
         }

@@ -54,15 +54,15 @@ def _ansi_gradient_color(t: float) -> str:
     Colours cycle: red -> orange -> yellow -> green -> cyan -> blue -> purple.
     """
     stops = [
-        (255, 0, 0),      # red
-        (255, 100, 0),    # orange-red
-        (255, 165, 0),    # orange
-        (255, 215, 0),    # gold
-        (255, 255, 0),    # yellow
-        (0, 255, 0),      # green
-        (0, 255, 200),    # cyan
-        (0, 191, 255),    # deep-sky-blue
-        (135, 0, 255),    # purple
+        (255, 0, 0),  # red
+        (255, 100, 0),  # orange-red
+        (255, 165, 0),  # orange
+        (255, 215, 0),  # gold
+        (255, 255, 0),  # yellow
+        (0, 255, 0),  # green
+        (0, 255, 200),  # cyan
+        (0, 191, 255),  # deep-sky-blue
+        (135, 0, 255),  # purple
     ]
     t = max(0.0, min(1.0, t))
     idx = t * (len(stops) - 1)
