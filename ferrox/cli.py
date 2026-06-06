@@ -596,6 +596,84 @@ async def start_chat_loop(config: FerroxConfig, no_animation: bool = False):
                 result = await browse_url_tool(MockCtx(), url, action, selector)
                 console.print(result)
                 continue
+            elif command.startswith("/hermes"):
+                # /hermes <subcommand> [args...]
+                # Examples:
+                #   /hermes chat <message>
+                #   /hermes models
+                #   /hermes status
+                #   /hermes skills
+                #   /hermes doctor
+                #   /hermes path
+                parts = user_input.split(" ", 2)
+                sub = parts[1].lower() if len(parts) > 1 else "status"
+
+                from .agent.tools_hermes import (
+                    _resolve_hermes_path,
+                    _hermes_cli_cmd,
+                    _hermes_available,
+                )
+
+                hermes_path = _resolve_hermes_path()
+                if sub == "path":
+                    available = _hermes_available(hermes_path)
+                    status_str = "[green]OK[/green]" if available else "[red]NOT FOUND[/red]"
+                    console.print(f"Hermes path: [cyan]{hermes_path}[/cyan]  {status_str}")
+                    continue
+                if not _hermes_available(hermes_path):
+                    display_error(f"Hermes not found at {hermes_path}.")
+                    display_warning(
+                        "Set HERMES_PATH env var or install from https://github.com/NousResearch/hermes-agent"
+                    )
+                    continue
+
+                if sub == "chat":
+                    if len(parts) < 3:
+                        display_error("Usage: /hermes chat <message>")
+                        continue
+                    msg = parts[2]
+                    console.print(f"[dim]🪶 Hermes: {msg[:80]}...[/dim]")
+                    cmd_args = _hermes_cli_cmd(hermes_path) + ["--oneshot", msg]
+                elif sub == "models":
+                    cmd_args = _hermes_cli_cmd(hermes_path) + ["models", "list"]
+                elif sub in ("status", "gateway"):
+                    cmd_args = _hermes_cli_cmd(hermes_path) + ["gateway", "status"]
+                elif sub == "skills":
+                    cmd_args = _hermes_cli_cmd(hermes_path) + ["skills", "list"]
+                elif sub == "memory":
+                    if len(parts) < 3:
+                        display_error("Usage: /hermes memory <query>")
+                        continue
+                    cmd_args = _hermes_cli_cmd(hermes_path) + ["memory", "query", parts[2]]
+                elif sub == "doctor":
+                    cmd_args = _hermes_cli_cmd(hermes_path) + ["doctor"]
+                else:
+                    display_error(
+                        f"Unknown /hermes subcommand: {sub}. Try: chat, models, status, skills, memory, doctor, path"
+                    )
+                    continue
+
+                import subprocess
+
+                try:
+                    result = subprocess.run(
+                        cmd_args,
+                        cwd=str(hermes_path),
+                        capture_output=True,
+                        text=True,
+                        timeout=180,
+                    )
+                    out = (result.stdout or result.stderr or "(no output)").strip()
+                    if len(out) > 4000:
+                        out = out[:4000] + f"\n... ({len(out) - 4000} more chars)"
+                    console.print(out)
+                    if result.returncode != 0 and result.stderr:
+                        display_warning(f"Hermes exited with code {result.returncode}")
+                except subprocess.TimeoutExpired:
+                    display_error("Hermes command timed out after 180s")
+                except FileNotFoundError as exc:
+                    display_error(f"Hermes executable not found: {exc}")
+                continue
             elif command.startswith("/plan "):
                 task = command.split(" ", 1)[1].strip() if len(command.split(" ", 1)) > 1 else None
                 if not task:
@@ -1520,6 +1598,120 @@ def models():
 def chat():
     """Start interactive chat (alias for start)"""
     start()
+
+
+@cli.group()
+def hermes():
+    """Hermes Agent integration commands (https://github.com/NousResearch/hermes-agent)"""
+    pass
+
+
+@hermes.command(name="chat")
+@click.argument("message")
+@click.option("--timeout", "-t", default=180, help="Timeout in seconds")
+def hermes_chat_cmd(message: str, timeout: int):
+    """Send a message to the Hermes agent."""
+    import asyncio
+
+    from .agent.tools_hermes import _resolve_hermes_path, _hermes_cli_cmd, _hermes_available
+
+    hermes_path = _resolve_hermes_path()
+    if not _hermes_available(hermes_path):
+        display_error(f"Hermes not found at {hermes_path}. Set HERMES_PATH or install Hermes.")
+        sys.exit(1)
+
+    cmd = _hermes_cli_cmd(hermes_path) + ["--oneshot", message]
+    try:
+        result = subprocess.run(
+            cmd, cwd=str(hermes_path), capture_output=True, text=True, timeout=timeout
+        )
+        if result.returncode == 0:
+            console.print(result.stdout)
+        else:
+            display_error(f"Hermes error: {result.stderr or result.stdout}")
+            sys.exit(1)
+    except subprocess.TimeoutExpired:
+        display_error(f"Timeout after {timeout}s")
+        sys.exit(1)
+
+
+@hermes.command(name="models")
+def hermes_models_cmd():
+    """List available Hermes models."""
+    import subprocess
+
+    from .agent.tools_hermes import _resolve_hermes_path, _hermes_cli_cmd, _hermes_available
+
+    hermes_path = _resolve_hermes_path()
+    if not _hermes_available(hermes_path):
+        display_error(f"Hermes not found at {hermes_path}.")
+        sys.exit(1)
+
+    cmd = _hermes_cli_cmd(hermes_path) + ["models", "list"]
+    result = subprocess.run(cmd, cwd=str(hermes_path), capture_output=True, text=True, timeout=30)
+    console.print(result.stdout or result.stderr)
+
+
+@hermes.command(name="status")
+def hermes_status_cmd():
+    """Show Hermes gateway status."""
+    import subprocess
+
+    from .agent.tools_hermes import _resolve_hermes_path, _hermes_cli_cmd, _hermes_available
+
+    hermes_path = _resolve_hermes_path()
+    if not _hermes_available(hermes_path):
+        display_error(f"Hermes not found at {hermes_path}.")
+        sys.exit(1)
+
+    cmd = _hermes_cli_cmd(hermes_path) + ["gateway", "status"]
+    result = subprocess.run(cmd, cwd=str(hermes_path), capture_output=True, text=True, timeout=30)
+    console.print(result.stdout or result.stderr)
+
+
+@hermes.command(name="skills")
+def hermes_skills_cmd():
+    """List Hermes skills."""
+    import subprocess
+
+    from .agent.tools_hermes import _resolve_hermes_path, _hermes_cli_cmd, _hermes_available
+
+    hermes_path = _resolve_hermes_path()
+    if not _hermes_available(hermes_path):
+        display_error(f"Hermes not found at {hermes_path}.")
+        sys.exit(1)
+
+    cmd = _hermes_cli_cmd(hermes_path) + ["skills", "list"]
+    result = subprocess.run(cmd, cwd=str(hermes_path), capture_output=True, text=True, timeout=30)
+    console.print(result.stdout or result.stderr)
+
+
+@hermes.command(name="doctor")
+def hermes_doctor_cmd():
+    """Run Hermes diagnostics."""
+    import subprocess
+
+    from .agent.tools_hermes import _resolve_hermes_path, _hermes_cli_cmd, _hermes_available
+
+    hermes_path = _resolve_hermes_path()
+    if not _hermes_available(hermes_path):
+        display_error(f"Hermes not found at {hermes_path}.")
+        sys.exit(1)
+
+    cmd = _hermes_cli_cmd(hermes_path) + ["doctor"]
+    result = subprocess.run(cmd, cwd=str(hermes_path), capture_output=True, text=True, timeout=60)
+    console.print(result.stdout or result.stderr)
+
+
+@hermes.command(name="path")
+def hermes_path_cmd():
+    """Show detected Hermes installation path."""
+    from .agent.tools_hermes import _resolve_hermes_path, _hermes_available
+
+    hermes_path = _resolve_hermes_path()
+    available = _hermes_available(hermes_path)
+    status = "[green]OK[/green]" if available else "[red]NOT FOUND[/red]"
+    console.print(f"Hermes path: [cyan]{hermes_path}[/cyan]  {status}")
 
 
 def main():

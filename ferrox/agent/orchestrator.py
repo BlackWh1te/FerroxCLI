@@ -113,6 +113,30 @@ from .tools_social import (  # noqa: E402
     retweet_tweet_tool,
     search_tweets_tool,
 )
+from .tools_hermes import (  # noqa: E402
+    hermes_chat_tool,
+    hermes_config_get_tool,
+    hermes_config_set_tool,
+    hermes_cron_add_tool,
+    hermes_cron_list_tool,
+    hermes_cron_remove_tool,
+    hermes_doctor_tool,
+    hermes_gateway_start_tool,
+    hermes_gateway_status_tool,
+    hermes_gateway_stop_tool,
+    hermes_kanban_create_tool,
+    hermes_kanban_list_tool,
+    hermes_kanban_task_add_tool,
+    hermes_memory_add_tool,
+    hermes_memory_query_tool,
+    hermes_model_list_tool,
+    hermes_model_switch_tool,
+    hermes_session_list_tool,
+    hermes_session_recap_tool,
+    hermes_skill_create_tool,
+    hermes_skill_install_tool,
+    hermes_skills_list_tool,
+)
 
 # MCP (Model Context Protocol) integration — browser automation, fetch, etc.
 try:
@@ -229,6 +253,23 @@ class FerroxAgent:
             "- fetch — pull any URL and get clean markdown content\n"
             "Use these when the user asks to 'open a browser', 'check a website', 'screenshot', or 'scrape'.\n"
             "MCP browser tools are ideal for content discovery (news, blogs, docs) to synthesize into tweets or posts."
+            "\n\n## HERMES AGENT INTEGRATION\n"
+            "If Hermes Agent (https://github.com/NousResearch/hermes-agent) is installed locally, "
+            "you can leverage its features directly:\n"
+            "- hermes_chat_tool(message) — Delegate any task to the Hermes agent (great for research, summarization, cross-session memory)\n"
+            "- hermes_model_list_tool / hermes_model_switch_tool(model) — Use Hermes as an alternate LLM provider or to switch models\n"
+            "- hermes_gateway_status_tool / start / stop — Check or control Hermes' multi-platform messaging gateway (Telegram, Discord, Slack, WhatsApp, Signal, Email)\n"
+            "- hermes_skills_list_tool / install / create — Discover, install, or create skills via the Hermes Skills Hub\n"
+            "- hermes_memory_query_tool(query) / add(entry) — Query or extend Hermes' persistent cross-session memory\n"
+            "- hermes_cron_list_tool / add / remove — Schedule recurring tasks via Hermes' built-in cron system\n"
+            "- hermes_kanban_list_tool / create / add — Use Hermes' kanban boards for task tracking\n"
+            "- hermes_session_list_tool / recap — Review past Hermes conversations\n"
+            "- hermes_config_get_tool / set — Read or update Hermes configuration\n"
+            "- hermes_doctor_tool — Run diagnostics on a Hermes installation\n\n"
+            "Use Hermes when the user asks about cross-session memory, scheduled automations, "
+            "messaging platforms, or wants to delegate work to a separate agent. "
+            "If Hermes is not installed, the tool will return a clear error — suggest 'pip install hermes-agent' "
+            "or visit https://github.com/NousResearch/hermes-agent for installation instructions."
         )
 
         # Inject skill content if active
@@ -304,6 +345,29 @@ class FerroxAgent:
         self._agent.tool(reddit_check_visibility_tool)
         self._agent.tool(delete_submission_tool)
         self._agent.tool(get_inbox_tool)
+        # Hermes Agent integration tools
+        self._agent.tool(hermes_chat_tool)
+        self._agent.tool(hermes_model_list_tool)
+        self._agent.tool(hermes_model_switch_tool)
+        self._agent.tool(hermes_gateway_status_tool)
+        self._agent.tool(hermes_gateway_start_tool)
+        self._agent.tool(hermes_gateway_stop_tool)
+        self._agent.tool(hermes_skills_list_tool)
+        self._agent.tool(hermes_skill_install_tool)
+        self._agent.tool(hermes_skill_create_tool)
+        self._agent.tool(hermes_memory_query_tool)
+        self._agent.tool(hermes_memory_add_tool)
+        self._agent.tool(hermes_cron_list_tool)
+        self._agent.tool(hermes_cron_add_tool)
+        self._agent.tool(hermes_cron_remove_tool)
+        self._agent.tool(hermes_kanban_list_tool)
+        self._agent.tool(hermes_kanban_create_tool)
+        self._agent.tool(hermes_kanban_task_add_tool)
+        self._agent.tool(hermes_session_list_tool)
+        self._agent.tool(hermes_session_recap_tool)
+        self._agent.tool(hermes_config_get_tool)
+        self._agent.tool(hermes_config_set_tool)
+        self._agent.tool(hermes_doctor_tool)
 
     def _build_mcp_toolsets(self):
         """Build MCPServerStdio instances from FerroxConfig.

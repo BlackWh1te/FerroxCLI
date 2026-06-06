@@ -49,6 +49,10 @@ class FerroxConfig(BaseModel):
     mcp_servers: list[McpServerConfig] = Field(
         default_factory=list, description="External MCP servers (Playwright, Fetch, etc.)"
     )
+    hermes_path: Optional[str] = Field(
+        default=None,
+        description="Path to Hermes Agent installation (overrides HERMES_PATH env var)",
+    )
 
     @field_validator("timeout")
     @classmethod
