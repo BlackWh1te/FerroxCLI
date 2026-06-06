@@ -2,6 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Multi-agent coordination (read first if a second session is active)
+
+If two AI sessions are working this repo in parallel, **read
+`bridgmiend/PROTOCOL.md` and `bridgmiend/AGENTS.md` before doing anything
+else.** Then load the relevant skill(s) from `bridgmiend/skills/`:
+
+- `worktree/` — you must be in your own git worktree
+- `claim-protocol/` — claim shared files before editing
+- `handoff/` — append a row after every meaningful commit
+- `merge-cadence/` — fetch+merge+test on session start
+- `conflict-resolution/` — when a merge fight starts
+
+Commit prefix for this session: `[agent-a]`. Branch: `agent-a`. Worktree:
+`../ferrox-agent-a`.
+
 ## Commands
 
 ```bash
